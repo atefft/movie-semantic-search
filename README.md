@@ -18,23 +18,25 @@ The target audience for this project is ML platform teams (e.g., Netflix ML Plat
 
 ## Architecture
 
-```
-                         OFFLINE PIPELINE (run once)
-  ┌─────────────────────────────────────────────────────────────┐
-  │                                                             │
-  │  CMU Corpus ──► Python Pipeline ──► Triton (embed) ──► Qdrant │
-  │  (TSV/TXT)      (download, parse)    (42k summaries)  (index) │
-  │                                                             │
-  └─────────────────────────────────────────────────────────────┘
+See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for the full multi-layer Mermaid diagram with clickable component nodes.
 
-                         ONLINE SERVING (per request)
-  ┌─────────────────────────────────────────────────────────────┐
-  │                                                             │
-  │  Browser ──► Spring Boot API ──► Triton ──► Qdrant          │
-  │  (query)     (orchestrate)       (embed)    (search)        │
-  │              (JSON response)     float32[384]  top-10       │
-  │                                                             │
-  └─────────────────────────────────────────────────────────────┘
+Each component has a dedicated detail page:
+
+| Component | Detail Page |
+|---|---|
+| Python Pipeline (5 scripts) | [docs/arch/pipeline.md](docs/arch/pipeline.md) |
+| Triton Inference Server | [docs/arch/triton.md](docs/arch/triton.md) |
+| Qdrant Vector Database | [docs/arch/qdrant.md](docs/arch/qdrant.md) |
+| Spring Boot API + UI | [docs/arch/api.md](docs/arch/api.md) |
+
+**Quick view — two-phase system:**
+
+```
+OFFLINE (run once):
+  CMU Corpus → Python Pipeline → Triton (batch embed 42k) → Qdrant (index) → TMDB (enrich posters)
+
+ONLINE (per request):
+  Browser → Spring Boot :8080 → Triton :8001 (embed query) → Qdrant :6333 (search) → JSON response
 ```
 
 ---
@@ -239,23 +241,28 @@ make down       # stop all services
 
 ## REST API
 
-```
-GET /api/search?q={query}&limit={n}
+See **[docs/API_CONTRACT.md](docs/API_CONTRACT.md)** for the full specification including all error responses and field types.
 
-Response:
+```
+GET /api/search?q={query}&limit={n}       # full search, default limit 10, max 50
+GET /api/autocomplete?q={partial}         # top 3 results for autocomplete dropdown
+GET /actuator/health                      # Spring Boot health check
+
+Response shape (both search endpoints):
 {
+  "query": "films about loneliness in space",
+  "count": 10,
   "results": [
     {
       "title": "Cast Away",
       "year": 2000,
       "genres": ["Drama", "Adventure"],
       "score": 0.87,
-      "summary_snippet": "A FedEx executive undergoes a physical and personal transformation..."
+      "summary_snippet": "A FedEx executive undergoes a physical and personal transformation...",
+      "thumbnail_url": "/uVlUu174iiKLBgcNnDOCFR8LNKP.jpg"
     }
   ]
 }
-
-GET /actuator/health
 ```
 
 ---

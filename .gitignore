@@ -1,0 +1,8 @@
+data/raw/
+data/embeddings/
+model-repository/**/model.onnx
+api/target/
+pipeline/__pycache__/
+pipeline/*.egg-info
+.env
+*.DS_Store
