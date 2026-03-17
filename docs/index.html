@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — Architecture Overview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .nav-links { display: flex; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+  .nav-links a { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; transition: background 0.15s; }
+  .nav-links a:hover { background: #30363d; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: #1c2128;
+    border: 1px solid #388bfd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    max-width: 320px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ Architecture Overview</span>
+</header>
+
+<main>
+  <h2>System Architecture</h2>
+  <p class="subtitle">End-to-end semantic movie search: offline embedding pipeline + online serving. Hover nodes for details; click highlighted nodes to explore.</p>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+flowchart TB
+  subgraph Offline["Offline Pipeline (run once)"]
+    CORPUS["Movie Corpus"] --> PIPELINE["Python Pipeline"]
+    TMDB["TMDB API"] --> PIPELINE
+    PIPELINE -->|"gRPC :8001"| TRITON_OFF["Triton Server"]
+    TRITON_OFF --> PIPELINE
+    PIPELINE -->|"REST :6333"| QDRANT["Qdrant"]
+  end
+
+  subgraph Online["Online Serving (per request)"]
+    BROWSER["Search UI"]
+    BROWSER -->|"GET /api/search\nGET /api/autocomplete"| API["Spring Boot API"]
+    API -->|"gRPC :8001"| TRITON_ON["Triton Server"]
+    API -->|"REST :6333"| QDRANT_Q["Qdrant"]
+    API --> BROWSER
+  end
+    </pre>
+  </div>
+
+  <div class="nav-links">
+    <a href="pipeline.html">Python Pipeline →</a>
+    <a href="triton.html">Triton Inference →</a>
+    <a href="qdrant.html">Qdrant Data Model →</a>
+    <a href="api.html">Spring Boot API →</a>
+  </div>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+const tooltips = {
+  CORPUS:     { title: 'Movie Corpus',      body: '42,306 CMU movie plot summaries with metadata (title, year, genres). Source data for the offline pipeline. Downloaded once; never modified.' },
+  TMDB:       { title: 'TMDB API',          body: 'The Movie Database API. Called during offline enrichment to fetch poster image URLs per movie. Stored in Qdrant payload as thumbnail_url. Free tier: 40 req/s.' },
+  PIPELINE:   { title: 'Python Pipeline',   body: '5 offline scripts: download CMU corpus, export all-MiniLM-L6-v2 to ONNX, batch-embed 42k summaries via Triton gRPC, ingest 384-dim vectors into Qdrant, enrich payloads with TMDB poster URLs.' },
+  TRITON_OFF: { title: 'Triton Server',     body: 'NVIDIA Triton Inference Server. Hosts all-MiniLM-L6-v2 via Python backend. Used offline for batch embedding 42k summaries. Input: raw text. Output: float32[384] normalized embedding.' },
+  QDRANT:     { title: 'Qdrant',            body: 'Vector database. Stores 384-dim cosine-indexed embeddings with payload: title, year, genres, 300-char plot snippet, TMDB poster path. Populated and enriched by the offline pipeline.' },
+  BROWSER:    { title: 'Search UI',         body: 'Vanilla HTML/JS served by Spring Boot. Debounced autocomplete dropdown (300ms, min 2 chars, top 3 results with poster thumbnails) and a full results table with poster, title, genres, and plot snippet.' },
+  API:        { title: 'Spring Boot API',   body: 'Java 21 + Spring Boot 3. Endpoints: GET /api/search (limit 1–50) and GET /api/autocomplete (limit 3). Embeds queries via Triton gRPC, searches Qdrant, returns ranked JSON. Also serves the UI.' },
+  TRITON_ON:  { title: 'Triton Server',     body: 'Same Triton instance used online. Embeds the user\'s search query at request time. Identical model as offline, ensuring query vectors are comparable to indexed corpus vectors.' },
+  QDRANT_Q:   { title: 'Qdrant',            body: 'Same Qdrant instance queried online. Given a 384-dim query vector, returns top-N movies by cosine similarity with full payload in milliseconds.' },
+};
+
+const links = {
+  PIPELINE:   'pipeline.html',
+  TRITON_OFF: 'triton.html',
+  QDRANT:     'qdrant.html',
+  API:        'api.html',
+  TRITON_ON:  'triton.html',
+  QDRANT_Q:   'qdrant.html',
+};
+
+const tip = document.getElementById('tooltip');
+const tipTitle = document.getElementById('tip-title');
+const tipBody = document.getElementById('tip-body');
+
+function showTip(evt, data) {
+  tipTitle.textContent = data.title;
+  tipBody.textContent = data.body;
+  tip.classList.add('visible');
+  moveTip(evt);
+}
+function moveTip(evt) {
+  const x = evt.clientX + 16, y = evt.clientY + 16;
+  const right = x + 340 > window.innerWidth;
+  tip.style.left = right ? (evt.clientX - 340) + 'px' : x + 'px';
+  tip.style.top = y + 'px';
+}
+function hideTip() { tip.classList.remove('visible'); }
+
+await mermaid.run();
+
+document.querySelectorAll('.mermaid svg g.node, .mermaid svg g.nodeLabel').forEach(el => {
+  // Extract node key from id like "flowchart-CORPUS-0"
+  const raw = el.closest('[id]')?.id || el.id || '';
+  const match = raw.match(/flowchart-([A-Z_]+)-\d+/);
+  if (!match) return;
+  const key = match[1];
+  const data = tooltips[key];
+  if (!data) return;
+
+  const target = el.closest('g[id]') || el;
+  target.style.cursor = links[key] ? 'pointer' : 'default';
+
+  target.addEventListener('mouseenter', e => showTip(e, data));
+  target.addEventListener('mousemove', moveTip);
+  target.addEventListener('mouseleave', hideTip);
+  if (links[key]) {
+    target.addEventListener('click', () => { window.location.href = links[key]; });
+  }
+});
+</script>
+</body>
+</html>

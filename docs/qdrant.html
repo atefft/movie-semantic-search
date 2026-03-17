@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — Qdrant Data Model</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 24px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Qdrant Data Model</span>
+</header>
+
+<main>
+  <h2>Qdrant Data Model</h2>
+  <p class="subtitle">Classes representing the stored data and search interface. Hover class names for details.</p>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+classDiagram
+  class Point {
+    +UUID id
+    +float32[] vector
+    +Payload payload
+  }
+
+  class Payload {
+    +String title
+    +int year
+    +String[] genres
+    +String plot_snippet
+    +String thumbnail_url
+  }
+
+  class SearchRequest {
+    +float32[] vector
+    +int limit
+    +Filter filter
+    +bool with_payload
+  }
+
+  class SearchResponse {
+    +ScoredPoint[] result
+  }
+
+  class ScoredPoint {
+    +UUID id
+    +float score
+    +Payload payload
+  }
+
+  Point "1" --> "1" Payload : has
+  SearchResponse "1" --> "*" ScoredPoint : contains
+  ScoredPoint "1" --> "1" Payload : includes
+    </pre>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+const tooltips = {
+  Point:         { title: 'Point',          body: 'The core storage unit in Qdrant. Each of the 42,306 movies is one Point. The id is a UUID, vector is the 384-dim float32 embedding, and payload contains all metadata.' },
+  Payload:       { title: 'Payload',        body: 'Metadata attached to each Point. title: movie name. year: release year. genres: array of genre strings. plot_snippet: first 300 chars of the CMU summary. thumbnail_url: TMDB poster path.' },
+  SearchRequest: { title: 'SearchRequest',  body: 'Sent to POST /collections/movies/points/search. vector is the query embedding. limit is 1–50. filter can restrict by year/genre. with_payload: true returns full metadata.' },
+  SearchResponse:{ title: 'SearchResponse', body: 'Qdrant\'s response to a search request. Contains an array of ScoredPoints ordered by cosine similarity (highest first). Returned in milliseconds even across 42k vectors.' },
+  ScoredPoint:   { title: 'ScoredPoint',    body: 'A single search result. id: the movie\'s UUID. score: cosine similarity in [0,1] (1 = identical). payload: the full Payload object for display in the UI.' },
+};
+
+const tip = document.getElementById('tooltip');
+const tipTitle = document.getElementById('tip-title');
+const tipBody = document.getElementById('tip-body');
+
+function showTip(evt, data) {
+  tipTitle.textContent = data.title;
+  tipBody.textContent = data.body;
+  tip.classList.add('visible');
+  moveTip(evt);
+}
+function moveTip(evt) {
+  const x = evt.clientX + 16, y = evt.clientY + 16;
+  const right = x + 340 > window.innerWidth;
+  tip.style.left = right ? (evt.clientX - 340) + 'px' : x + 'px';
+  tip.style.top = y + 'px';
+}
+function hideTip() { tip.classList.remove('visible'); }
+
+await mermaid.run();
+
+// Class diagram nodes have class "classGroup" or label elements inside g.label
+document.querySelectorAll('.mermaid svg g.classGroup').forEach(el => {
+  const titleEl = el.querySelector('.classTitle, text');
+  const label = titleEl ? titleEl.textContent.trim() : '';
+  const data = tooltips[label];
+  if (!data) return;
+
+  el.style.cursor = 'default';
+  el.addEventListener('mouseenter', e => showTip(e, data));
+  el.addEventListener('mousemove', moveTip);
+  el.addEventListener('mouseleave', hideTip);
+});
+</script>
+</body>
+</html>
