@@ -107,18 +107,31 @@ function hideTip() { tip.classList.remove('visible'); }
 
 await mermaid.run();
 
-// Sequence diagram actors have class "actor"
-document.querySelectorAll('.mermaid svg .actor').forEach(el => {
-  const textEl = el.querySelector ? el.querySelector('text') : null;
-  const label = textEl ? textEl.textContent.trim() : '';
-  // Match by alias key via text content lookup
-  const keyMap = {
-    '01_download': 'S1', '02_export_onnx': 'S2', '03_embed': 'S3',
-    'Triton gRPC': 'Triton', '04_ingest': 'S4', 'Qdrant REST': 'Qdrant',
-    '05_enrich': 'S5', 'TMDB API': 'TMDB',
-  };
+const keyMap = {
+  '01_download': 'S1', '02_export_onnx': 'S2', '03_embed': 'S3',
+  'Triton gRPC': 'Triton', '04_ingest': 'S4', 'Qdrant REST': 'Qdrant',
+  '05_enrich': 'S5', 'TMDB API': 'TMDB',
+};
+
+// In Mermaid 10 sequence diagrams, class "actor" is on <rect> and <text>
+// elements directly — there is no wrapping <g class="actor">.
+// Attach to both so hovering anywhere on the box triggers the tooltip.
+document.querySelectorAll('.mermaid svg text.actor, .mermaid svg rect.actor').forEach(el => {
+  let label = '';
+  if (el.tagName.toLowerCase() === 'text') {
+    // Collect tspan children in case text is split across tspans
+    const tspans = el.querySelectorAll('tspan');
+    label = tspans.length
+      ? [...tspans].map(t => t.textContent).join('').trim()
+      : el.textContent.trim();
+  } else {
+    // For rect, find the sibling text.actor in the same <g>
+    const sibling = el.closest('g')?.querySelector('text.actor');
+    label = sibling ? sibling.textContent.trim() : '';
+  }
+
   const key = keyMap[label];
-  const data = key ? tooltips[key] : null;
+  const data = tooltips[key];
   if (!data) return;
 
   el.style.cursor = 'default';
