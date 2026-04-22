@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Semantic Search</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f4f6f9; color: #222; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    h1 { font-size: 1.6rem; margin: 0; color: #1a1a2e; }
+    nav a { color: #555; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { color: #3b6fd4; text-decoration: underline; }
+
+    .search-wrapper { position: relative; margin-bottom: 1.5rem; }
+    .search-row { display: flex; gap: 0.5rem; }
+    #q {
+      flex: 1; padding: 0.75rem 1rem; border: 1px solid #d0d5dd;
+      border-radius: 8px; font-size: 1rem; background: #fff;
+      transition: border-color 0.15s;
+    }
+    #q:focus { outline: none; border-color: #3b6fd4; box-shadow: 0 0 0 3px rgba(59,111,212,0.12); }
+    .btn-search {
+      padding: 0.75rem 1.5rem; background: #3b6fd4; color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .btn-search:hover { background: #2f5ab8; }
+
+    .dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0;
+      width: calc(100% - 116px);
+      background: #fff; border: 1px solid #d0d5dd; border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1); z-index: 200; display: none;
+    }
+    .dropdown.visible { display: block; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 1rem; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: #f0f5ff; }
+    .dropdown-item:first-child { border-radius: 8px 8px 0 0; }
+    .dropdown-item:last-child { border-radius: 0 0 8px 8px; }
+    .dropdown-item:only-child { border-radius: 8px; }
+    .sug-thumb { width: 40px; height: 60px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+    .sug-thumb-placeholder { width: 40px; height: 60px; background: #dde2ec; border-radius: 3px; flex-shrink: 0; }
+    .sug-info .sug-title { font-weight: 600; font-size: 0.9rem; }
+    .sug-info .sug-year { color: #888; font-size: 0.8rem; margin-top: 2px; }
+
+    #results { min-height: 60px; }
+
+    .spinner {
+      display: flex; justify-content: center; padding: 3rem;
+    }
+    .spinner::after {
+      content: ''; width: 28px; height: 28px;
+      border: 3px solid #d0d5dd; border-top-color: #3b6fd4;
+      border-radius: 50%; animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    thead th {
+      padding: 0.65rem 1rem; background: #f8f9fb; text-align: left;
+      font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    tbody td { padding: 1rem; border-top: 1px solid #f0f2f5; vertical-align: top; }
+    tbody tr:first-child td { border-top: none; }
+    tbody tr:hover td { background: #fafbff; }
+
+    .poster-img { width: 80px; height: 120px; object-fit: cover; border-radius: 5px; display: block; }
+    .poster-placeholder { width: 80px; height: 120px; background: #dde2ec; border-radius: 5px; }
+
+    .movie-title { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
+    .movie-year { color: #888; font-size: 0.85rem; margin-bottom: 6px; }
+    .genre-tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      background: #e8f0fe; color: #3b5bdb; font-size: 0.72rem;
+      margin: 2px 3px 2px 0;
+    }
+    .summary { font-size: 0.85rem; color: #444; line-height: 1.55; }
+
+    .state-empty { text-align: center; padding: 3rem; color: #888; font-size: 0.95rem; }
+    .state-error { text-align: center; padding: 3rem; color: #c0392b; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Movie Semantic Search</h1>
+      <nav><a href="/operator.html">Operator Dashboard &rarr;</a></nav>
+    </header>
+
+    <div class="search-wrapper">
+      <div class="search-row">
+        <input type="text" id="q" placeholder="Search by plot, theme, or description&hellip;" autocomplete="off">
+        <button class="btn-search" id="searchBtn">Search</button>
+      </div>
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById('q');
+    const dropdown = document.getElementById('dropdown');
+    const resultsEl = document.getElementById('results');
+    let debounceTimer = null;
+
+    // ── Suggestions ──────────────────────────────────────────────────────────
+
+    function hideSuggestions() {
+      dropdown.classList.remove('visible');
+      dropdown.innerHTML = '';
+    }
+
+    function showSuggestions(results) {
+      dropdown.innerHTML = '';
+      if (!results.length) { hideSuggestions(); return; }
+      results.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+
+        if (r.thumbnailUrl) {
+          const img = document.createElement('img');
+          img.src = r.thumbnailUrl;
+          img.alt = r.title;
+          img.className = 'sug-thumb';
+          item.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'sug-thumb-placeholder';
+          item.appendChild(ph);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'sug-info';
+        info.innerHTML = `<div class="sug-title">${escHtml(r.title)}</div>
+                          <div class="sug-year">${r.year ?? ''}</div>`;
+        item.appendChild(info);
+
+        item.addEventListener('click', () => {
+          input.value = r.title;
+          hideSuggestions();
+          doSearch(r.title);
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.classList.add('visible');
+    }
+
+    async function fetchSuggestions(q) {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=3`);
+        if (!res.ok) return;
+        const data = await res.json();
+        showSuggestions(data.results ?? []);
+      } catch (_) { /* ignore suggestion errors */ }
+    }
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      const q = input.value.trim();
+      if (q.length < 2) { hideSuggestions(); return; }
+      debounceTimer = setTimeout(() => fetchSuggestions(q), 300);
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') hideSuggestions();
+      if (e.key === 'Enter') { hideSuggestions(); doSearch(input.value.trim()); }
+    });
+
+    document.addEventListener('click', e => {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) hideSuggestions();
+    });
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      hideSuggestions();
+      doSearch(input.value.trim());
+    });
+
+    async function doSearch(q) {
+      if (!q) return;
+      resultsEl.innerHTML = '<div class="spinner"></div>';
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=10`);
+        const data = await res.json();
+        if (!res.ok) {
+          const detail = data.detail ?? data.message ?? res.statusText;
+          resultsEl.innerHTML = `<div class="state-error">Error: ${escHtml(detail)}</div>`;
+          return;
+        }
+        renderResults(data.results ?? []);
+      } catch (err) {
+        resultsEl.innerHTML = `<div class="state-error">Request failed: ${escHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderResults(results) {
+      if (!results.length) {
+        resultsEl.innerHTML = '<div class="state-empty">No results found.</div>';
+        return;
+      }
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr>
+        <th>Poster</th>
+        <th>Title / Year / Genres</th>
+        <th>Summary</th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+      results.forEach(r => {
+        const tr = document.createElement('tr');
+
+        // Poster cell
+        const posterTd = document.createElement('td');
+        if (r.thumbnailUrl) {
+          posterTd.innerHTML = `<img src="${escHtml(r.thumbnailUrl)}" alt="${escHtml(r.title)}" class="poster-img">`;
+        } else {
+          posterTd.innerHTML = '<div class="poster-placeholder"></div>';
+        }
+        tr.appendChild(posterTd);
+
+        // Info cell
+        const infoTd = document.createElement('td');
+        const genres = (r.genres ?? []).map(g => `<span class="genre-tag">${escHtml(g)}</span>`).join('');
+        infoTd.innerHTML = `<div class="movie-title">${escHtml(r.title)}</div>
+                            <div class="movie-year">${r.year ?? ''}</div>
+                            <div>${genres}</div>`;
+        tr.appendChild(infoTd);
+
+        // Summary cell
+        const sumTd = document.createElement('td');
+        const snippet = (r.summarySnippet ?? '').slice(0, 200);
+        sumTd.innerHTML = `<div class="summary">${escHtml(snippet)}</div>`;
+        tr.appendChild(sumTd);
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      resultsEl.innerHTML = '';
+      resultsEl.appendChild(table);
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

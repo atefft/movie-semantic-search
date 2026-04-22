@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operator — Movie Semantic Search</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f4f6f9; color: #222; }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+    /* Mock banner */
+    .mock-banner {
+      display: none; background: #fff8e1; border-bottom: 2px solid #f9a825;
+      padding: 0.65rem 1rem; font-size: 0.88rem; color: #6d4c00; text-align: center;
+    }
+    .mock-banner.visible { display: block; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.25rem 0; margin-bottom: 0.5rem;
+    }
+    h1 { font-size: 1.4rem; margin: 0; color: #1a1a2e; }
+    nav a { color: #555; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { color: #3b6fd4; text-decoration: underline; }
+
+    h2 { font-size: 1rem; font-weight: 700; color: #444; text-transform: uppercase;
+         letter-spacing: 0.06em; margin: 1.75rem 0 0.75rem; }
+
+    /* Services */
+    .services { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .service-card {
+      background: #fff; border: 1px solid #e0e4ec; border-radius: 10px;
+      padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem;
+      min-width: 220px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .status-dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+      background: #ccc;
+    }
+    .status-dot.up { background: #27ae60; }
+    .status-dot.down { background: #e74c3c; }
+    .service-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .svc-btns { display: flex; gap: 0.4rem; }
+    .btn-sm {
+      padding: 0.3rem 0.7rem; font-size: 0.8rem; border-radius: 5px;
+      border: 1px solid #d0d5dd; background: #fff; cursor: pointer;
+      transition: background 0.1s;
+    }
+    .btn-sm:hover { background: #f0f5ff; border-color: #3b6fd4; color: #3b6fd4; }
+
+    /* Pipeline section */
+    .pipeline-actions { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 0.6rem 1.2rem; background: #3b6fd4; color: #fff; border: none;
+      border-radius: 7px; font-size: 0.9rem; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #2f5ab8; }
+    .btn-secondary {
+      padding: 0.6rem 1.2rem; background: #fff; color: #555;
+      border: 1px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: #f0f0f5; }
+
+    /* Steps table */
+    .steps-table { width: 100%; border-collapse: collapse; background: #fff;
+                   border-radius: 10px; overflow: hidden;
+                   box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    .steps-table thead th {
+      padding: 0.6rem 0.9rem; background: #f8f9fb; text-align: left;
+      font-size: 0.73rem; color: #666; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .steps-table tbody td { padding: 0.75rem 0.9rem; border-top: 1px solid #f0f2f5; vertical-align: middle; }
+    .steps-table tbody tr:first-child td { border-top: none; }
+
+    .step-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .step-num { color: #888; font-size: 0.85rem; }
+    .step-name { font-weight: 600; }
+    .prereq-label { font-size: 0.78rem; color: #aaa; }
+    .prereq-label.met { color: #27ae60; }
+
+    .btn-run {
+      padding: 0.3rem 0.8rem; font-size: 0.82rem; border-radius: 5px;
+      border: 1px solid #3b6fd4; background: #fff; color: #3b6fd4;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-run:hover:not(:disabled) { background: #3b6fd4; color: #fff; }
+    .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-logs {
+      padding: 0.3rem 0.7rem; font-size: 0.78rem; border-radius: 5px;
+      border: 1px solid #d0d5dd; background: #fff; color: #555;
+      cursor: pointer;
+    }
+    .btn-logs:hover { background: #f0f0f5; }
+
+    /* TMDB key input */
+    .tmdb-input {
+      padding: 0.3rem 0.6rem; font-size: 0.82rem; border: 1px solid #d0d5dd;
+      border-radius: 5px; width: 160px;
+    }
+    .tmdb-input:focus { outline: none; border-color: #3b6fd4; }
+
+    /* Log panel */
+    details.log-panel { margin-top: 0; }
+    details.log-panel summary { display: none; }
+    .log-pre {
+      margin: 0.5rem 0 0; padding: 0.75rem 1rem; background: #1e1e2e;
+      color: #a0d0a0; font-size: 0.78rem; font-family: 'Courier New', monospace;
+      border-radius: 6px; max-height: 220px; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-banner" id="mockBanner">
+    Mock Mode &mdash; no real services are connected. All pipeline steps and service controls are simulated.
+  </div>
+
+  <div class="container">
+    <header>
+      <h1>Movie Semantic Search &mdash; Operator</h1>
+      <nav><a href="/">&larr; Search</a></nav>
+    </header>
+
+    <h2>Services</h2>
+    <div class="services">
+      <div class="service-card">
+        <div class="status-dot" id="dot-triton"></div>
+        <div class="service-name">Triton Inference Server</div>
+        <div class="svc-btns">
+          <button class="btn-sm" onclick="serviceAction('triton','start')">Start</button>
+          <button class="btn-sm" onclick="serviceAction('triton','stop')">Stop</button>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="status-dot" id="dot-qdrant"></div>
+        <div class="service-name">Qdrant</div>
+        <div class="svc-btns">
+          <button class="btn-sm" onclick="serviceAction('qdrant','start')">Start</button>
+          <button class="btn-sm" onclick="serviceAction('qdrant','stop')">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <h2>Pipeline</h2>
+    <div class="pipeline-actions">
+      <button class="btn-primary" id="btnRunAll">Run Full Pipeline</button>
+      <button class="btn-secondary" id="btnResetAll">Reset &amp; Run All</button>
+    </div>
+
+    <table class="steps-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>#</th>
+          <th>Step</th>
+          <th>Prereqs</th>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="stepsBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const STEP_NAMES = ['', 'Download Dataset', 'Export Model', 'Generate Embeddings', 'Ingest into Qdrant', 'Enrich with TMDB'];
+    const PREREQ_LABELS = ['', 'none', 'none', 'step 1', 'step 3', 'step 4'];
+    let activeSources = {}; // step -> EventSource
+
+    // ── Build initial step rows ───────────────────────────────────────────────
+
+    function buildRows() {
+      const tbody = document.getElementById('stepsBody');
+      tbody.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const tr = document.createElement('tr');
+        tr.id = `step-row-${i}`;
+
+        const tmdbCell = i === 5
+          ? `<input type="text" class="tmdb-input" id="tmdb-key" placeholder="TMDB API key (opt.)">`
+          : '';
+
+        tr.innerHTML = `
+          <td><span class="step-icon" id="icon-${i}">&#9675;</span></td>
+          <td class="step-num">${i}</td>
+          <td class="step-name">
+            ${STEP_NAMES[i]}
+            ${tmdbCell}
+          </td>
+          <td><span class="prereq-label" id="prereq-${i}">${PREREQ_LABELS[i]}</span></td>
+          <td><button class="btn-run" id="btn-run-${i}" onclick="runStep(${i})" disabled>Run</button></td>
+          <td>
+            <button class="btn-logs" onclick="toggleLog(${i})">Logs</button>
+            <details class="log-panel" id="log-${i}">
+              <summary></summary>
+              <pre class="log-pre" id="log-pre-${i}"></pre>
+            </details>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function toggleLog(step) {
+      const panel = document.getElementById(`log-${step}`);
+      panel.open = !panel.open;
+    }
+
+    // ── Polling ───────────────────────────────────────────────────────────────
+
+    async function pollAll() {
+      await Promise.all([pollHealth(), pollStatus()]);
+    }
+
+    async function pollHealth() {
+      try {
+        const res = await fetch('/api/operator/health');
+        if (!res.ok) return;
+        const h = await res.json();
+        document.getElementById('dot-triton').className = 'status-dot ' + (h.triton ? 'up' : 'down');
+        document.getElementById('dot-qdrant').className = 'status-dot ' + (h.qdrant ? 'up' : 'down');
+        document.getElementById('mockBanner').classList.toggle('visible', !!h.mock);
+      } catch (_) {}
+    }
+
+    async function pollStatus() {
+      try {
+        const res = await fetch('/api/operator/status');
+        if (!res.ok) return;
+        const { steps } = await res.json();
+        steps.forEach(s => updateStepUI(s));
+      } catch (_) {}
+    }
+
+    function updateStepUI(s) {
+      const icon = document.getElementById(`icon-${s.step}`);
+      const btn = document.getElementById(`btn-run-${s.step}`);
+      const prereqEl = document.getElementById(`prereq-${s.step}`);
+
+      // Icon
+      if (s.running) {
+        icon.textContent = '\u27F3'; // ⟳
+      } else if (s.done) {
+        icon.textContent = '\u2713'; // ✓
+        icon.style.color = '#27ae60';
+      } else if (s.prereqsMet) {
+        icon.textContent = '\u25CF'; // ●
+        icon.style.color = '#3b6fd4';
+      } else {
+        icon.textContent = '\u25CB'; // ○
+        icon.style.color = '#aaa';
+      }
+
+      // Run button — enabled when prereqs met, not done, not running
+      btn.disabled = !s.prereqsMet || s.done || s.running || activeSources[s.step] != null;
+
+      // Prereq label
+      prereqEl.className = 'prereq-label' + (s.prereqsMet ? ' met' : '');
+    }
+
+    // ── Run step ─────────────────────────────────────────────────────────────
+
+    function runStep(step) {
+      if (activeSources[step]) return;
+
+      let url = `/api/operator/run/${step}`;
+      if (step === 5) {
+        const key = (document.getElementById('tmdb-key')?.value ?? '').trim();
+        if (key) url += `?tmdbKey=${encodeURIComponent(key)}`;
+      }
+
+      const logPanel = document.getElementById(`log-${step}`);
+      const logPre = document.getElementById(`log-pre-${step}`);
+      logPanel.open = true;
+      logPre.textContent = '';
+
+      const btn = document.getElementById(`btn-run-${step}`);
+      btn.disabled = true;
+
+      const source = new EventSource(url);
+      activeSources[step] = source;
+
+      source.onmessage = e => {
+        logPre.textContent += e.data + '\n';
+        logPre.scrollTop = logPre.scrollHeight;
+      };
+
+      source.addEventListener('done', e => {
+        try {
+          const { exitCode } = JSON.parse(e.data);
+          logPre.textContent += `\n[exit: ${exitCode}]\n`;
+        } catch (_) {}
+        source.close();
+        delete activeSources[step];
+        pollStatus();
+      });
+
+      source.onerror = () => {
+        if (source.readyState === EventSource.CLOSED) return;
+        logPre.textContent += '[stream error — step may already be running or prereqs not met]\n';
+        source.close();
+        delete activeSources[step];
+        btn.disabled = false;
+      };
+    }
+
+    // ── Run all pipeline ──────────────────────────────────────────────────────
+
+    function runAll(force) {
+      const url = '/api/operator/run/all' + (force ? '?force=true' : '');
+
+      // Clear all step panels upfront; open step 1
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`log-pre-${i}`).textContent = '';
+      }
+      document.getElementById('log-1').open = true;
+
+      let currentStep = 1;
+      const source = new EventSource(url);
+
+      source.onmessage = e => {
+        const line = e.data;
+        const m = line.match(/=== Step (\d)/);
+        if (m) {
+          currentStep = parseInt(m[1]);
+          const panel = document.getElementById(`log-${currentStep}`);
+          if (panel) panel.open = true;
+          // Don't emit the header line itself — it's a backend routing marker
+          return;
+        }
+        const logPre = document.getElementById(`log-pre-${currentStep}`);
+        if (logPre) {
+          logPre.textContent += line + '\n';
+          logPre.scrollTop = logPre.scrollHeight;
+        }
+      };
+
+      source.addEventListener('done', e => {
+        try {
+          const { exitCode } = JSON.parse(e.data);
+          const logPre = document.getElementById(`log-pre-${currentStep}`);
+          if (logPre) logPre.textContent += `\n[pipeline complete — exit: ${exitCode}]\n`;
+        } catch (_) {}
+        source.close();
+        pollStatus();
+      });
+
+      source.onerror = () => {
+        if (source.readyState === EventSource.CLOSED) return;
+        const logPre = document.getElementById(`log-pre-${currentStep}`);
+        if (logPre) logPre.textContent += '[pipeline stream error]\n';
+        source.close();
+      };
+    }
+
+    // ── Service controls ──────────────────────────────────────────────────────
+
+    async function serviceAction(name, action) {
+      await fetch(`/api/operator/service/${name}/${action}`, { method: 'POST' });
+      await pollHealth();
+    }
+
+    // ── Wire up pipeline buttons ──────────────────────────────────────────────
+
+    document.getElementById('btnRunAll').addEventListener('click', () => runAll(false));
+    document.getElementById('btnResetAll').addEventListener('click', () => runAll(true));
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    buildRows();
+    pollAll();
+    setInterval(pollAll, 5000);
+  </script>
+</body>
+</html>

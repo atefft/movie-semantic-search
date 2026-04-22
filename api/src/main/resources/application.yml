@@ -1,0 +1,23 @@
+triton:
+  host: localhost
+  port: 8001
+
+qdrant:
+  base-url: http://localhost:6333
+
+search:
+  default-limit: 10
+
+autocomplete:
+  limit: 3
+
+tmdb:
+  poster-base-url: https://image.tmdb.org/t/p/w200
+
+dataset:
+  corpus-url: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
+  data-dir: data/corpus
+
+model:
+  script-dir: ../pipeline
+  model-dir: ../model-repository

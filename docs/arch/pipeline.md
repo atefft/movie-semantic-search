@@ -54,9 +54,26 @@ sequenceDiagram
 ### `02_export_model.py`
 
 - Loads `sentence-transformers/all-MiniLM-L6-v2` from HuggingFace
-- Exports to `model-repository/all-minilm-l6-v2/1/model.onnx`
+- Exports ONNX model and saves tokenizer files to `model-repository/all-minilm-l6-v2/1/`:
+  - `model.onnx`
+  - `tokenizer.json`
+  - `tokenizer_config.json`
+  - `vocab.txt`
+  - `special_tokens_map.json`
 - Runs a verification inference with `onnxruntime` to confirm the export is valid
-- Idempotent: skips export if `model.onnx` already exists
+- Idempotent: skips export if `model.onnx` **and** `tokenizer.json` both exist
+
+ONNX tensor names produced by this export:
+
+| Direction | Name | dtype | Shape |
+|---|---|---|---|
+| Input | `input_ids` | int64 | `[batch, seq]` |
+| Input | `attention_mask` | int64 | `[batch, seq]` |
+| Input | `token_type_ids` | int64 | `[batch, seq]` |
+| Output | `token_embeddings` | float32 | `[batch, seq, 384]` |
+
+`model.py` mean-pools `token_embeddings` over the sequence dimension (weighted by
+`attention_mask`) to produce the final `[batch, 384]` sentence embedding.
 
 ### `03_embed_corpus.py`
 

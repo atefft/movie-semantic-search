@@ -5,7 +5,7 @@ Vector database storing 384-dimensional embeddings and movie metadata. Handles c
 ```mermaid
 classDiagram
   class Point {
-    +string id
+    +unsigned_integer id
     +float32[384] vector
     +Payload payload
   }
@@ -31,7 +31,7 @@ classDiagram
   }
 
   class ScoredPoint {
-    +string id
+    +unsigned_integer id
     +float score
     +Payload payload
   }
@@ -49,6 +49,10 @@ name:              movies
 vectors.size:      384
 vectors.distance:  Cosine
 ```
+
+**Point ID:** `wikipedia_movie_id` as unsigned integer (e.g., `975900`). Qdrant requires
+point IDs to be unsigned integers or UUIDs; the numeric CMU ID is used directly. The same
+value is also stored as a string in the `movie_id` payload field.
 
 ## Payload Schema
 
@@ -84,7 +88,7 @@ Example full URL: `https://image.tmdb.org/t/p/w200/abc123.jpg`
 {
   "result": [
     {
-      "id": "975900",
+      "id": 975900,
       "score": 0.8741,
       "payload": {
         "movie_id": "975900",
