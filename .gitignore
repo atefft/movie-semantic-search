@@ -1,5 +1,6 @@
 data/raw/
 data/embeddings/
+api/data/corpus/
 model-repository/**/model.onnx
 api/target/
 pipeline/__pycache__/
