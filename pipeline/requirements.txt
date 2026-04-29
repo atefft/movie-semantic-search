@@ -1,3 +1,5 @@
 transformers==4.39.3
 torch>=2.0.0
 onnxruntime==1.17.3
+tritonclient[grpc]
+tqdm
