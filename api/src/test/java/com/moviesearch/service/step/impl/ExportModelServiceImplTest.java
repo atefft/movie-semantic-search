@@ -41,8 +41,8 @@ class ExportModelServiceImplTest {
     @BeforeEach
     void setUp() {
         ModelProperties props = new ModelProperties();
-        props.setScriptDir(tempDir.resolve("pipeline"));
-        props.setModelDir(tempDir);
+        props.setScriptDir(tempDir.resolve("pipeline").toString());
+        props.setModelDir(tempDir.toString());
         service = new ExportModelServiceImpl(props, pythonScriptRunner);
     }
 
