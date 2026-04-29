@@ -8,3 +8,4 @@ pipeline/tests/__pycache__/
 pipeline/*.egg-info
 .env
 *.DS_Store
+prompt.txt
