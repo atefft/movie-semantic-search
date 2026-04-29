@@ -5,9 +5,13 @@ import com.moviesearch.model.EmbeddingResponse;
 import com.moviesearch.service.EmbeddingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 @Service
+@Primary
+@ConditionalOnProperty(name = "triton.mock", havingValue = "true")
 public class MockEmbeddingService implements EmbeddingService {
 
     private static final Logger log = LoggerFactory.getLogger(MockEmbeddingService.class);
