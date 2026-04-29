@@ -148,6 +148,17 @@ class SearchControllerTest {
     }
 
     @Test
+    void search_embeddingServiceInvalidRequest() throws Exception {
+        when(searchService.search(argThat(r -> "foo".equals(r.getQuery()))))
+            .thenThrow(new EmbeddingServiceException(EmbeddingServiceException.INVALID_REQUEST));
+
+        mockMvc.perform(get("/api/search").param("q", "foo"))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(jsonPath("$.detail").value(
+                "Embedding service rejected request: invalid input"));
+    }
+
+    @Test
     void search_vectorSearchConnectionRefused() throws Exception {
         when(searchService.search(argThat(r -> "foo".equals(r.getQuery()))))
             .thenThrow(new VectorSearchServiceException(VectorSearchServiceException.CONNECTION_REFUSED));
