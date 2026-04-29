@@ -9,3 +9,4 @@ pipeline/*.egg-info
 .env
 *.DS_Store
 prompt.txt
+.claude/settings.local.json

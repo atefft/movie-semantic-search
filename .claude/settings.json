@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(cd *)",
+      "Bash(for *)",
+      "Bash(state=*)",
+      "Bash(bash *)",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(pip3 install *)",
+      "Bash(pip install *)",
+      "Bash(grep *)",
+      "Bash(xargs *)",
+      "Bash(wait)"
+    ]
+  }
+}
