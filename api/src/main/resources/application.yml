@@ -1,6 +1,8 @@
 triton:
   host: localhost
   port: 8001
+  model-name: all-MiniLM-L6-v2
+  deadline-ms: 5000
 
 qdrant:
   base-url: http://localhost:6333
