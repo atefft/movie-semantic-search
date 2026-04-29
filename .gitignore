@@ -4,6 +4,7 @@ api/data/corpus/
 model-repository/**/model.onnx
 api/target/
 pipeline/__pycache__/
+pipeline/tests/__pycache__/
 pipeline/*.egg-info
 .env
 *.DS_Store
