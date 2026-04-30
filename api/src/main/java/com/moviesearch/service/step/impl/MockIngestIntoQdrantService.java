@@ -2,11 +2,8 @@ package com.moviesearch.service.step.impl;
 
 import com.moviesearch.exception.IngestIntoQdrantServiceException;
 import com.moviesearch.service.step.IngestIntoQdrantService;
-import org.springframework.stereotype.Service;
-
 import java.util.function.Consumer;
 
-@Service
 public class MockIngestIntoQdrantService implements IngestIntoQdrantService {
 
     private static final String[] LOGS = {
