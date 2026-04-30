@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — SwaggerUiConfig</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.95rem; font-weight: 600; margin: 20px 0 6px; color: #8b949e; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .feature-badge { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; color: #8b949e; margin-bottom: 20px; }
+  .feature-badge a { color: #58a6ff; text-decoration: none; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; line-height: 1.5; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .tag { display: inline-block; border-radius: 4px; padding: 1px 8px; font-size: 0.75rem; font-weight: 600; }
+  .tag.happy { background: #1a4a1a; color: #3fb950; border: 1px solid #238636; }
+  .tag.error { background: #4a1a1a; color: #f85149; border: 1px solid #da3633; }
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li { padding: 5px 0; font-size: 0.875rem; color: #c9d1d9; display: flex; align-items: flex-start; gap: 8px; }
+  .checklist li::before { content: "☐"; color: #58a6ff; font-size: 1rem; line-height: 1.2; flex-shrink: 0; }
+  .callout { background: #161b22; border-left: 3px solid #388bfd; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 16px 0; font-size: 0.875rem; color: #c9d1d9; line-height: 1.6; }
+  .callout.warning { border-color: #e3b341; }
+  .nav-links { display: flex; gap: 16px; margin-top: 40px; flex-wrap: wrap; }
+  .nav-links a { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; transition: background 0.15s; }
+  .nav-links a:hover { background: #30363d; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p { font-size: 0.9rem; color: #c9d1d9; line-height: 1.7; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #87 / SwaggerUiConfig</span>
+</header>
+
+<main>
+  <h2>SwaggerUiConfig</h2>
+  <div class="feature-badge">Part of <a href="https://github.com/atefft/movie-semantic-search/issues/87">#87 — Executive guide: page shell, navigation, and operator tools index</a></div>
+
+  <p>Adds the <code>springdoc-openapi-starter-webmvc-ui</code> dependency to the Spring Boot API project. This auto-configures Swagger UI at <code>http://localhost:8080/swagger-ui/index.html</code> and an OpenAPI JSON endpoint at <code>http://localhost:8080/v3/api-docs</code> with zero additional Java configuration. The Swagger UI allows non-developers to browse and try the API endpoints visually in a browser, and is linked from the executive guide.</p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead><tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr><td>artifactId</td><td>Maven dependency</td><td>springdoc-openapi-starter-webmvc-ui</td><td>Added to <code>api/pom.xml</code> <code>&lt;dependencies&gt;</code> block under groupId <code>org.springdoc</code></td></tr>
+      <tr><td>version</td><td>String</td><td>2.3.0</td><td>Compatible with Spring Boot 3.2.x; must use v2.x (not v1.x)</td></tr>
+      <tr><td>Swagger UI URL</td><td>String</td><td>http://localhost:8080/swagger-ui/index.html</td><td>Auto-configured by springdoc; no Java class needed</td></tr>
+      <tr><td>OpenAPI JSON URL</td><td>String</td><td>http://localhost:8080/v3/api-docs</td><td>Auto-generated from <code>@RestController</code> annotations</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead><tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr></thead>
+    <tbody>
+      <tr><td>springdoc-openapi-starter-webmvc-ui</td><td>Maven artifact</td><td><code>pom.xml</code> <code>&lt;dependency&gt;</code> block under <code>org.springdoc</code> groupId</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">Not applicable for mock behaviors — this component is a Maven dependency addition with no runtime Java class to unit-test.</div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead><tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>springdoc v1.x used instead of v2.x</td><td>Startup failure or misconfiguration</td><td>Spring Boot 3.x requires springdoc v2.x — use exactly <code>2.3.0</code></td></tr>
+      <tr><td>2</td><td>Dependency block missing <code>groupId</code></td><td>Maven build failure</td><td>Must specify <code>org.springdoc</code> as groupId</td></tr>
+      <tr><td>3</td><td>Existing tests run after dependency added</td><td>All tests pass</td><td>springdoc must not conflict with existing Spring beans</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <ul class="checklist">
+    <li><code>./mvnw -f api/pom.xml test</code> passes with the new dependency present</li>
+    <li>No existing tests fail after the dependency addition</li>
+    <li><code>api/pom.xml</code> contains <code>springdoc-openapi-starter-webmvc-ui</code> version <code>2.3.0</code> under groupId <code>org.springdoc</code></li>
+  </ul>
+
+  <div class="nav-links">
+    <a href="ExecutiveGuide.html">Next: ExecutiveGuide →</a>
+    <a href="../../index.html">← Architecture Overview</a>
+  </div>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+</body>
+</html>

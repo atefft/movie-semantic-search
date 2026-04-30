@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — ExecutiveGuide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.95rem; font-weight: 600; margin: 20px 0 6px; color: #8b949e; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .feature-badge { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; color: #8b949e; margin-bottom: 20px; }
+  .feature-badge a { color: #58a6ff; text-decoration: none; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; line-height: 1.5; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .tag { display: inline-block; border-radius: 4px; padding: 1px 8px; font-size: 0.75rem; font-weight: 600; }
+  .tag.happy { background: #1a4a1a; color: #3fb950; border: 1px solid #238636; }
+  .tag.note { background: #162032; color: #79c0ff; border: 1px solid #388bfd; }
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li { padding: 5px 0; font-size: 0.875rem; color: #c9d1d9; display: flex; align-items: flex-start; gap: 8px; }
+  .checklist li::before { content: "☐"; color: #58a6ff; font-size: 1rem; line-height: 1.2; flex-shrink: 0; }
+  .callout { background: #161b22; border-left: 3px solid #388bfd; border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 16px 0; font-size: 0.875rem; color: #c9d1d9; line-height: 1.6; }
+  .callout.warning { border-color: #e3b341; }
+  .nav-links { display: flex; gap: 16px; margin-top: 40px; flex-wrap: wrap; }
+  .nav-links a { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; transition: background 0.15s; }
+  .nav-links a:hover { background: #30363d; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p { font-size: 0.9rem; color: #c9d1d9; line-height: 1.7; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #87 / ExecutiveGuide</span>
+</header>
+
+<main>
+  <h2>ExecutiveGuide</h2>
+  <div class="feature-badge">Part of <a href="https://github.com/atefft/movie-semantic-search/issues/87">#87 — Executive guide: page shell, navigation, and operator tools index</a></div>
+
+  <p>A static HTML page at <code>docs/executive-guide.html</code> written for an executive audience — no technical knowledge assumed. The page provides a plain-English orientation to the Movie Semantic Search project: what it does, how to bring it up, and where to find each operator tool. It uses the same dark GitHub theme as the existing docs site (<code>background: #0d1117</code>), includes a sticky sidebar table of contents, and is linked from <code>docs/index.html</code>.</p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead><tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr><td>Page title</td><td>String</td><td>Movie Semantic Search — Executive Guide</td><td>Used in <code>&lt;title&gt;</code> and <code>&lt;h1&gt;</code></td></tr>
+      <tr><td>Breadcrumb</td><td>String</td><td>/ Architecture / Executive Guide</td><td>Header breadcrumb; "Architecture" links to <code>index.html</code></td></tr>
+      <tr><td>Sidebar TOC</td><td>Sticky HTML nav</td><td>Anchor links to each section</td><td>Fixed left rail; anchors: <code>#overview</code>, <code>#getting-started</code>, <code>#operator-tools</code>, <code>#walkthrough</code></td></tr>
+      <tr><td>Section: System Overview</td><td><code>&lt;section id="overview"&gt;</code></td><td>One non-technical paragraph</td><td>Describes the product as "a tool to search movies by meaning, not just keywords"</td></tr>
+      <tr><td>Section: Getting Started</td><td><code>&lt;section id="getting-started"&gt;</code></td><td>Numbered plain-English steps</td><td>Step 1: Start the services. Step 2: Load movie data. Step 3: Open the search interface. No CLI commands shown.</td></tr>
+      <tr><td>Section: Operator Tools</td><td><code>&lt;section id="operator-tools"&gt;</code></td><td>HTML table listing all tools</td><td>Four rows: Qdrant Dashboard, Swagger UI, Pipeline Runner, Search Interface</td></tr>
+      <tr><td>Section: Walkthrough</td><td><code>&lt;section id="walkthrough"&gt;</code></td><td>Stub placeholder</td><td>"Step-by-step testing instructions are coming soon."</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Operator Tools Table</h3>
+  <table class="prop-table">
+    <thead><tr><th>Tool</th><th>URL</th><th>Plain-English Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Qdrant Dashboard</td>
+        <td><code>http://localhost:6333/dashboard</code></td>
+        <td>Inspect the movie database — browse what's stored and confirm the data loaded correctly</td>
+      </tr>
+      <tr>
+        <td>Swagger UI</td>
+        <td><code>http://localhost:8080/swagger-ui/index.html</code></td>
+        <td>Try the search API directly in the browser — type a query and see results without writing any code</td>
+      </tr>
+      <tr>
+        <td>Pipeline Runner</td>
+        <td><span class="tag note">command-line</span> <code>make pipeline</code></td>
+        <td>Loads all movie data into the system — run this once after starting the services for the first time</td>
+      </tr>
+      <tr>
+        <td>Search Interface</td>
+        <td><code>http://localhost:8080</code></td>
+        <td>The movie search UI — the main product; type any description and find matching films</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">All localhost URLs are for local development only. For a deployed environment, substitute the appropriate hostname provided by the operator.</div>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead><tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr></thead>
+    <tbody>
+      <tr><td>docs/index.html</td><td>HTML file</td><td>Must be updated to add a navigation link to <code>executive-guide.html</code></td></tr>
+      <tr><td>Swagger UI endpoint</td><td>URL</td><td>Provided by the SwaggerUiConfig task; URL is <code>http://localhost:8080/swagger-ui/index.html</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">Not applicable for mock behaviors — this component is a static HTML file with no runtime dependencies.</div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead><tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Narrow viewport (&lt;768px)</td><td>Sidebar TOC does not overlap main content</td><td>Use <code>position: sticky</code> with sufficient left margin on the main content area</td></tr>
+      <tr><td>2</td><td>Services not running when user opens links</td><td>Browser shows connection refused</td><td>Expected behavior — localhost links; no page-level fix needed</td></tr>
+      <tr><td>3</td><td>Reader has no technical background</td><td>All sections readable without explanation</td><td>No unexplained CLI syntax, code blocks, or acronyms in visible page content</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <ul class="checklist">
+    <li><code>docs/executive-guide.html</code> exists</li>
+    <li><code>docs/index.html</code> contains <code>&lt;a href="executive-guide.html"&gt;</code></li>
+    <li>Page <code>&lt;title&gt;</code> is <code>Movie Semantic Search — Executive Guide</code></li>
+    <li>All four section IDs exist: <code>overview</code>, <code>getting-started</code>, <code>operator-tools</code>, <code>walkthrough</code></li>
+    <li>Sidebar TOC contains four anchor links: <code>#overview</code>, <code>#getting-started</code>, <code>#operator-tools</code>, <code>#walkthrough</code></li>
+    <li>Operator tools table contains all four rows: Qdrant Dashboard, Swagger UI, Pipeline Runner, Search Interface</li>
+    <li>Qdrant Dashboard link: <code>http://localhost:6333/dashboard</code></li>
+    <li>Swagger UI link: <code>http://localhost:8080/swagger-ui/index.html</code></li>
+    <li>Search Interface link: <code>http://localhost:8080</code></li>
+    <li>Body background is <code>#0d1117</code> (dark theme matches existing docs)</li>
+    <li>No unexplained CLI commands, code snippets, or engineering jargon in visible page content</li>
+  </ul>
+
+  <div class="nav-links">
+    <a href="SwaggerUiConfig.html">← Previous: SwaggerUiConfig</a>
+    <a href="../../index.html">← Architecture Overview</a>
+  </div>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+</body>
+</html>
