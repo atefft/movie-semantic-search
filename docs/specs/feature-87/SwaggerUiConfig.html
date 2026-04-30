@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — SwaggerUiConfig</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .tg { color: #7ee787; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / SwaggerUiConfig</span>
+</header>
+
+<main>
+  <h2>SwaggerUiConfig</h2>
+  <p class="subtitle">Swagger UI / OpenAPI 3 explorer for the Spring Boot API — added via <code>springdoc-openapi-starter-webmvc-ui</code> with zero additional configuration.</p>
+
+  <h3>Dependency</h3>
+  <div class="code-block">
+<span class="cm">&lt;!-- api/pom.xml --&gt;</span>
+&lt;<span class="kw">dependency</span>&gt;
+  &lt;<span class="tg">groupId</span>&gt;org.springdoc&lt;/<span class="tg">groupId</span>&gt;
+  &lt;<span class="tg">artifactId</span>&gt;springdoc-openapi-starter-webmvc-ui&lt;/<span class="tg">artifactId</span>&gt;
+  &lt;<span class="tg">version</span>&gt;2.3.0&lt;/<span class="tg">version</span>&gt;
+&lt;/<span class="kw">dependency</span>&gt;
+  </div>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    No <code>@Configuration</code> class is needed. Adding the dependency to <code>pom.xml</code> is sufficient —
+    Spring Boot auto-configuration registers the Swagger UI servlet and the OpenAPI JSON endpoint automatically.
+  </p>
+
+  <h3>Endpoints</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Path</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>http://localhost:8080/swagger-ui/index.html</td>
+        <td>Interactive Swagger UI — browse and try all documented API endpoints in a browser</td>
+      </tr>
+      <tr>
+        <td>http://localhost:8080/v3/api-docs</td>
+        <td>Raw OpenAPI 3 JSON schema — consumed by Swagger UI and compatible with external tooling</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Documented API Endpoints</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Method</th><th>Path</th><th>Controller</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GET</td>
+        <td><code>/api/search</code></td>
+        <td>SearchController</td>
+        <td>Semantic movie search. Params: <code>q</code> (required), <code>limit</code> (1–50, default 10)</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td><code>/api/operator/health</code></td>
+        <td>OperatorController</td>
+        <td>Returns Triton, Qdrant, and API health status as booleans</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td><code>/api/operator/status</code></td>
+        <td>OperatorController</td>
+        <td>Returns current pipeline step statuses</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td><code>/api/operator/run/{step}</code></td>
+        <td>OperatorController</td>
+        <td>Runs a numbered pipeline step; streams output via SSE</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td><code>/api/operator/run/all</code></td>
+        <td>OperatorController</td>
+        <td>Runs all pipeline steps; streams output via SSE. Param: <code>force</code> (boolean)</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td><code>/api/operator/service/{name}/start</code></td>
+        <td>OperatorController</td>
+        <td>Starts a named service (<code>triton</code> or <code>qdrant</code>)</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td><code>/api/operator/service/{name}/stop</code></td>
+        <td>OperatorController</td>
+        <td>Stops a named service (<code>triton</code> or <code>qdrant</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Configuration Notes</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    springdoc-openapi 2.x targets Spring Boot 3 / Spring Framework 6. It scans <code>@RestController</code> classes
+    at startup and derives the OpenAPI schema from method signatures, parameter annotations, and return types — no
+    manual schema authoring required. The UI is served as static resources bundled in the starter JAR.
+  </p>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
