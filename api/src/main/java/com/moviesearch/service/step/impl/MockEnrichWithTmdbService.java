@@ -2,11 +2,9 @@ package com.moviesearch.service.step.impl;
 
 import com.moviesearch.exception.EnrichWithTmdbServiceException;
 import com.moviesearch.service.step.EnrichWithTmdbService;
-import org.springframework.stereotype.Service;
 
 import java.util.function.Consumer;
 
-@Service
 public class MockEnrichWithTmdbService implements EnrichWithTmdbService {
 
     private static final String[] LOGS = {

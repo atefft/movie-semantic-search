@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -12,12 +13,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +44,7 @@ class PythonScriptRunnerImplTest {
 
     @Test
     void run_happyPath() throws Exception {
-        doReturn(process).when(launcher).launch(any());
+        doReturn(process).when(launcher).launch(any(), any());
         byte[] output = "line1\nline2\n".getBytes();
         when(process.getInputStream()).thenReturn(new ByteArrayInputStream(output));
         when(process.waitFor()).thenReturn(0);
@@ -54,7 +57,7 @@ class PythonScriptRunnerImplTest {
 
     @Test
     void run_nonZeroExitCode_throwsIOException() throws Exception {
-        doReturn(process).when(launcher).launch(any());
+        doReturn(process).when(launcher).launch(any(), any());
         when(process.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
         when(process.waitFor()).thenReturn(1);
 
@@ -65,7 +68,7 @@ class PythonScriptRunnerImplTest {
 
     @Test
     void run_ioErrorLaunching_propagatesIOException() throws IOException {
-        doThrow(new IOException("launch failed")).when(launcher).launch(any());
+        doThrow(new IOException("launch failed")).when(launcher).launch(any(), any());
 
         assertThatThrownBy(() -> service.run(tempDir.resolve("script.py"), line -> {}))
             .isInstanceOf(IOException.class)
@@ -74,11 +77,40 @@ class PythonScriptRunnerImplTest {
 
     @Test
     void run_interrupted_propagatesInterruptedException() throws Exception {
-        doReturn(process).when(launcher).launch(any());
+        doReturn(process).when(launcher).launch(any(), any());
         when(process.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
         when(process.waitFor()).thenThrow(new InterruptedException("interrupted"));
 
         assertThatThrownBy(() -> service.run(tempDir.resolve("script.py"), line -> {}))
             .isInstanceOf(InterruptedException.class);
+    }
+
+    @Test
+    void run_withExtraEnv_passesEnvToLauncher() throws Exception {
+        doReturn(process).when(launcher).launch(any(), any());
+        when(process.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+        when(process.waitFor()).thenReturn(0);
+
+        Map<String, String> extraEnv = Map.of("MY_KEY", "my-value");
+        service.run(tempDir.resolve("script.py"), line -> {}, extraEnv);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> envCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(launcher).launch(any(), envCaptor.capture());
+        assertThat(envCaptor.getValue()).containsEntry("MY_KEY", "my-value");
+    }
+
+    @Test
+    void run_noEnvOverload_delegatesToEnvOverloadWithEmptyMap() throws Exception {
+        doReturn(process).when(launcher).launch(any(), any());
+        when(process.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+        when(process.waitFor()).thenReturn(0);
+
+        service.run(tempDir.resolve("script.py"), line -> {});
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> envCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(launcher).launch(any(), envCaptor.capture());
+        assertThat(envCaptor.getValue()).isEmpty();
     }
 }
