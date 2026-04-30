@@ -2,9 +2,7 @@ package com.moviesearch.service.impl;
 
 import com.moviesearch.model.ServiceStatus;
 import com.moviesearch.service.TritonServiceManager;
-import org.springframework.stereotype.Service;
 
-@Service
 public class MockTritonServiceManager implements TritonServiceManager {
 
     private volatile ServiceStatus status = ServiceStatus.STOPPED;
