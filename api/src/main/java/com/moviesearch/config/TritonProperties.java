@@ -1,10 +1,14 @@
 package com.moviesearch.config;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
+@Validated
 @ConfigurationProperties(prefix = "triton")
 public class TritonProperties {
 
+    @NotBlank
     private String host = "localhost";
     private int port = 8001;
     private String modelName = "all-MiniLM-L6-v2";
