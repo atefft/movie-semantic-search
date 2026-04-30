@@ -6,11 +6,13 @@ import com.moviesearch.model.VectorSearchResponse;
 import com.moviesearch.service.VectorSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@ConditionalOnProperty(name = "qdrant.mock", havingValue = "true", matchIfMissing = true)
 public class MockVectorSearchService implements VectorSearchService {
 
     private static final Logger log = LoggerFactory.getLogger(MockVectorSearchService.class);
