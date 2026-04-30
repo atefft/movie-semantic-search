@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — TritonGrpcConfig</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table td:nth-child(2) { color: #f2cc60; font-family: "SFMono-Regular", Consolas, monospace; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .code-block .st { color: #a5d6ff; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / TritonGrpcConfig</span>
+</header>
+
+<main>
+  <h2>TritonGrpcConfig</h2>
+  <p class="subtitle">Spring <code>@Configuration</code> class that creates and manages the gRPC <code>ManagedChannel</code> to Triton Inference Server and exposes the generated blocking stub as a Spring bean.</p>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+flowchart LR
+  PROPS["TritonProperties\nhost / port / deadlineMs"]
+  CONFIG["TritonGrpcConfig\n@Configuration"]
+  CHANNEL["ManagedChannel\nNettyChannelBuilder"]
+  STUB["GRPCInferenceServiceBlockingStub"]
+  EMBED["EmbeddingServiceImpl\n@Service"]
+
+  PROPS --> CONFIG
+  CONFIG --> CHANNEL
+  CHANNEL --> STUB
+  STUB --> EMBED
+    </pre>
+  </div>
+
+  <h3>Responsibilities</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;">
+    Creates a single shared <code>ManagedChannel</code> backed by Netty, pointed at the Triton gRPC endpoint configured via <code>TritonProperties</code>.
+    Exposes a <code>GRPCInferenceServiceBlockingStub</code> bean wired with a per-call deadline.
+    Registers a <code>@PreDestroy</code> hook that shuts the channel down gracefully on application stop.
+  </p>
+
+  <h3>Configuration Properties (<code>application.yml</code>)</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>triton.host</td><td>localhost</td><td>Hostname or IP of the Triton Inference Server.</td></tr>
+      <tr><td>triton.port</td><td>8001</td><td>gRPC port on the Triton server.</td></tr>
+      <tr><td>triton.model-name</td><td>all-MiniLM-L6-v2</td><td>Model name used in <code>ModelInferRequest.model_name</code>.</td></tr>
+      <tr><td>triton.deadline-ms</td><td>5000</td><td>Per-call deadline in milliseconds applied to every gRPC request.</td></tr>
+      <tr><td>triton.mock</td><td>false</td><td>When <code>true</code>, Spring wires <code>MockEmbeddingService</code> instead of the real gRPC implementation.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Bean Wiring Sketch</h3>
+  <div class="code-block">
+<span class="an">@Configuration</span>
+<span class="an">@EnableConfigurationProperties(TritonProperties.class)</span>
+<span class="kw">public class</span> TritonGrpcConfig {
+
+    <span class="kw">private final</span> TritonProperties props;
+    <span class="kw">private</span> ManagedChannel channel;
+
+    <span class="an">@Bean</span>
+    <span class="kw">public</span> GRPCInferenceServiceBlockingStub tritonStub() {
+        channel = NettyChannelBuilder
+            .forAddress(props.getHost(), props.getPort())
+            .usePlaintext()
+            .build();
+        <span class="kw">return</span> GRPCInferenceServiceGrpc.newBlockingStub(channel);
+    }
+
+    <span class="an">@PreDestroy</span>
+    <span class="kw">public void</span> shutdown() <span class="kw">throws</span> InterruptedException {
+        <span class="kw">if</span> (channel != <span class="kw">null</span>) {
+            channel.shutdown().awaitTermination(<span class="st">5</span>, TimeUnit.SECONDS);
+        }
+    }
+}
+  </div>
+
+  <h3>Design Notes</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The channel is plaintext (<code>usePlaintext()</code>) because Triton is accessed within the same Docker network — TLS termination is not required.
+    The stub is blocking (synchronous) to keep the Spring MVC thread model simple; async stubs would require reactive wiring not currently present in the API.
+    The <code>triton.mock</code> flag allows the entire gRPC stack to be bypassed in local development or CI without a running Triton container.
+  </p>
+
+  <a class="back-link" href="index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+const tooltips = {
+  PROPS:   { title: 'TritonProperties',                   body: '@ConfigurationProperties(prefix="triton"). Binds host, port, modelName, deadlineMs, and mock flag from application.yml. Injected into TritonGrpcConfig.' },
+  CONFIG:  { title: 'TritonGrpcConfig (@Configuration)',  body: 'Spring configuration class. Creates the ManagedChannel once at startup and exposes the gRPC blocking stub as a singleton bean. Registers @PreDestroy shutdown hook.' },
+  CHANNEL: { title: 'ManagedChannel (Netty)',             body: 'Long-lived gRPC channel to Triton on host:port. Plaintext (no TLS). Shared across all stub calls — gRPC channels are designed to be reused.' },
+  STUB:    { title: 'GRPCInferenceServiceBlockingStub',   body: 'Generated Triton gRPC stub. Exposes modelInfer(ModelInferRequest) → ModelInferResponse. Each call honours the deadline-ms timeout configured in TritonProperties.' },
+  EMBED:   { title: 'EmbeddingServiceImpl',               body: '@Service that injects the stub bean and uses it to call Triton. Marshals String text → InferInputTensor, parses float32[384] from ModelInferResponse.' },
+};
+
+const tip = document.getElementById('tooltip');
+const tipTitle = document.getElementById('tip-title');
+const tipBody = document.getElementById('tip-body');
+
+function showTip(evt, data) {
+  tipTitle.textContent = data.title;
+  tipBody.textContent = data.body;
+  tip.classList.add('visible');
+  moveTip(evt);
+}
+function moveTip(evt) {
+  const x = evt.clientX + 16, y = evt.clientY + 16;
+  const right = x + 340 > window.innerWidth;
+  tip.style.left = right ? (evt.clientX - 340) + 'px' : x + 'px';
+  tip.style.top = y + 'px';
+}
+function hideTip() { tip.classList.remove('visible'); }
+
+await mermaid.run();
+
+document.querySelectorAll('.mermaid svg g.node').forEach(el => {
+  const raw = el.id || '';
+  const match = raw.match(/flowchart-([A-Z_]+)-\d+/);
+  if (!match) return;
+  const key = match[1];
+  const data = tooltips[key];
+  if (!data) return;
+
+  el.addEventListener('mouseenter', e => showTip(e, data));
+  el.addEventListener('mousemove', moveTip);
+  el.addEventListener('mouseleave', hideTip);
+});
+</script>
+</body>
+</html>
