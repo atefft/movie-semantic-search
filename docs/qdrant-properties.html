@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — QdrantProperties</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .code-block .st { color: #a5d6ff; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / QdrantProperties</span>
+</header>
+
+<main>
+  <h2>QdrantProperties</h2>
+  <p class="subtitle">Spring Boot <code>@ConfigurationProperties</code> class that binds the <code>qdrant.*</code> namespace from <code>application.yml</code>, exposing the Qdrant base URL and mock flag to the rest of the application.</p>
+
+  <h3>Configuration Properties</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property (YAML key)</th><th>Java field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>qdrant.base-url</td>
+        <td><code>baseUrl</code></td>
+        <td>String</td>
+        <td><code>http://localhost:6333</code></td>
+        <td>Root URL of the Qdrant REST API. Used by <code>VectorSearchServiceImpl</code> to build the search endpoint URL.</td>
+      </tr>
+      <tr>
+        <td>qdrant.mock</td>
+        <td><code>mock</code></td>
+        <td>boolean</td>
+        <td><code>false</code></td>
+        <td>When <code>true</code>, Spring wires <code>MockVectorSearchService</code> instead of <code>VectorSearchServiceImpl</code>. Allows full search-flow testing without a running Qdrant container.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>application.yml defaults</h3>
+  <div class="code-block">
+qdrant:
+  base-url: http://localhost:6333
+  mock: false
+  </div>
+
+  <h3>Class Definition</h3>
+  <div class="code-block">
+<span class="an">@ConfigurationProperties(prefix = "qdrant")</span>
+<span class="kw">public class</span> QdrantProperties {
+
+    <span class="kw">private</span> String baseUrl = <span class="st">"http://localhost:6333"</span>;
+    <span class="kw">private boolean</span> mock = <span class="kw">false</span>;
+
+    <span class="kw">public</span> String getBaseUrl() { <span class="kw">return</span> baseUrl; }
+    <span class="kw">public void</span> setBaseUrl(String baseUrl) { <span class="kw">this</span>.baseUrl = baseUrl; }
+    <span class="kw">public boolean</span> isMock() { <span class="kw">return</span> mock; }
+    <span class="kw">public void</span> setMock(<span class="kw">boolean</span> mock) { <span class="kw">this</span>.mock = mock; }
+}
+  </div>
+
+  <h3>Mock vs Real Wiring</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The <code>qdrant.mock</code> flag drives a <code>@ConditionalOnProperty</code> split between the two <code>VectorSearchService</code> implementations:
+  </p>
+  <table class="prop-table" style="margin-top:12px;">
+    <thead>
+      <tr><th>qdrant.mock value</th><th>Bean wired</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>true</code></td>
+        <td><code>MockVectorSearchService</code></td>
+        <td>Returns fixed mock results without contacting Qdrant. Default for unit tests.</td>
+      </tr>
+      <tr>
+        <td><code>false</code> (or absent)</td>
+        <td><code>VectorSearchServiceImpl</code></td>
+        <td>Calls the real Qdrant REST endpoint at <code>baseUrl</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <a class="back-link" href="index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>

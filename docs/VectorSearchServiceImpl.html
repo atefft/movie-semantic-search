@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — VectorSearchServiceImpl</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .code-block .st { color: #a5d6ff; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / VectorSearchServiceImpl</span>
+</header>
+
+<main>
+  <h2>VectorSearchServiceImpl</h2>
+  <p class="subtitle">Real implementation of <code>VectorSearchService</code> that calls Qdrant's REST API to retrieve the top-N movies by cosine similarity to a query embedding vector.</p>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+sequenceDiagram
+  participant SS as SearchService
+  participant VS as VectorSearchServiceImpl
+  participant RT as RestTemplate
+  participant QD as Qdrant :6333
+
+  SS->>VS: search(VectorSearchRequest)
+  VS->>VS: build QdrantSearchRequest<br/>(vector, limit, with_payload=true)
+  VS->>RT: postForEntity(searchUrl, body)
+  RT->>QD: POST /collections/movies/points/search
+  QD-->>RT: QdrantSearchResponse (result[])
+  RT-->>VS: ResponseEntity
+  VS->>VS: map result[] → MovieResult[]
+  VS-->>SS: VectorSearchResponse(results)
+    </pre>
+  </div>
+
+  <h3>Interface Contract</h3>
+  <div class="code-block">
+<span class="kw">public interface</span> VectorSearchService {
+    VectorSearchResponse search(VectorSearchRequest request);
+}
+
+<span class="cm">// VectorSearchRequest wraps float[] vector + int limit</span>
+<span class="cm">// VectorSearchResponse wraps List&lt;MovieResult&gt;</span>
+  </div>
+
+  <h3>Request Marshalling</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The implementation builds a <code>QdrantSearchRequest</code> with the query <code>vector</code>, the requested <code>limit</code>,
+    and <code>with_payload = true</code>. This is POST-ed to
+    <code>{qdrant.base-url}/collections/movies/points/search</code>.
+    Jackson serialises the float array directly into the Qdrant JSON schema.
+  </p>
+
+  <h3>Response Mapping</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Each element in the <code>result</code> array is deserialized into a <code>QdrantResult</code> containing a cosine
+    <code>score</code> and a <code>payload</code>. The payload fields are mapped to <code>MovieResult</code> via a stream:
+  </p>
+  <table class="prop-table" style="margin-top:12px;">
+    <thead>
+      <tr><th>Qdrant payload field</th><th>MovieResult field</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>title</td><td><code>title</code></td><td>Movie title string</td></tr>
+      <tr><td>release_year</td><td><code>year</code></td><td>Integer; <code>@JsonProperty("release_year")</code></td></tr>
+      <tr><td>genres</td><td><code>genres</code></td><td><code>List&lt;String&gt;</code></td></tr>
+      <tr><td><em>(result.score)</em></td><td><code>score</code></td><td>Cosine similarity, 0–1</td></tr>
+      <tr><td>summary_snippet</td><td><code>summarySnippet</code></td><td><code>@JsonProperty("summary_snippet")</code></td></tr>
+      <tr><td>thumbnail_url</td><td><code>thumbnailUrl</code></td><td><code>@JsonProperty("thumbnail_url")</code>; may be null</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Error Handling</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Condition</th><th>Spring exception</th><th>Thrown as</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Qdrant unreachable / connection refused</td>
+        <td><code>ResourceAccessException</code></td>
+        <td><code>VectorSearchServiceException("…connection refused")</code></td>
+      </tr>
+      <tr>
+        <td>Qdrant returns non-2xx HTTP status</td>
+        <td><code>HttpStatusCodeException</code></td>
+        <td><code>VectorSearchServiceException("…error response")</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:#8b949e;font-size:0.875rem;margin-top:8px;"><code>VectorSearchServiceException</code> is a <code>RuntimeException</code>. <code>GlobalExceptionHandler</code> maps it to HTTP 503.</p>
+
+  <h3>Implementation Sketch</h3>
+  <div class="code-block">
+<span class="an">@Service</span>
+<span class="an">@ConditionalOnProperty(name = "qdrant.mock", havingValue = "false", matchIfMissing = false)</span>
+<span class="kw">public class</span> VectorSearchServiceImpl <span class="kw">implements</span> VectorSearchService {
+
+    <span class="kw">private final</span> RestTemplate restTemplate;
+    <span class="kw">private final</span> String searchUrl;
+
+    <span class="kw">public</span> VectorSearchServiceImpl(RestTemplate restTemplate, QdrantProperties properties) {
+        <span class="kw">this</span>.restTemplate = restTemplate;
+        <span class="kw">this</span>.searchUrl = properties.getBaseUrl() + <span class="st">"/collections/movies/points/search"</span>;
+    }
+
+    <span class="an">@Override</span>
+    <span class="kw">public</span> VectorSearchResponse search(VectorSearchRequest request) {
+        QdrantSearchRequest body = <span class="kw">new</span> QdrantSearchRequest(request.getVector(), request.getLimit());
+        <span class="kw">try</span> {
+            ResponseEntity&lt;QdrantSearchResponse&gt; resp =
+                restTemplate.postForEntity(searchUrl, body, QdrantSearchResponse.<span class="kw">class</span>);
+            List&lt;MovieResult&gt; results = resp.getBody().result.stream()
+                .map(r -&gt; MovieResult.builder()
+                    .title(r.payload.title)
+                    .year(r.payload.releaseYear)
+                    .genres(r.payload.genres)
+                    .score(r.score)
+                    .summarySnippet(r.payload.summarySnippet)
+                    .thumbnailUrl(r.payload.thumbnailUrl)
+                    .build())
+                .toList();
+            <span class="kw">return new</span> VectorSearchResponse(results);
+        } <span class="kw">catch</span> (ResourceAccessException e) {
+            <span class="kw">throw new</span> VectorSearchServiceException(CONNECTION_REFUSED, e);
+        } <span class="kw">catch</span> (HttpStatusCodeException e) {
+            <span class="kw">throw new</span> VectorSearchServiceException(NON_2XX_RESPONSE);
+        }
+    }
+}
+  </div>
+
+  <h3>Mock vs Real Wiring</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    When <code>qdrant.mock=true</code> (or the property is absent) in <code>application.yml</code>, Spring wires
+    <code>MockVectorSearchService</code> instead, which returns a fixed list of five movies without contacting Qdrant.
+    This allows full search-flow testing in environments without a running Qdrant container.
+  </p>
+  <table class="prop-table" style="margin-top:12px;">
+    <thead>
+      <tr><th>qdrant.mock value</th><th>Bean wired</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>false</code></td><td><code>VectorSearchServiceImpl</code> (real Qdrant REST calls)</td></tr>
+      <tr><td><code>true</code> or absent</td><td><code>MockVectorSearchService</code> (fixed mock results)</td></tr>
+    </tbody>
+  </table>
+
+  <a class="back-link" href="index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+await mermaid.run();
+</script>
+</body>
+</html>
