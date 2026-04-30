@@ -27,4 +27,4 @@ model:
   model-dir: ../model-repository
 
 project:
-  root: .
+  root: ${user.dir}
