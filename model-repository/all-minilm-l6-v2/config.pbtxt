@@ -1,0 +1,23 @@
+name: "all-minilm-l6-v2"
+backend: "python"
+
+input [
+  {
+    name: "TEXT"
+    data_type: TYPE_BYTES
+    dims: [ 1 ]
+  }
+]
+
+output [
+  {
+    name: "sentence_embedding"
+    data_type: TYPE_FP32
+    dims: [ 384 ]
+  }
+]
+
+dynamic_batching {
+  preferred_batch_size: [ 8, 16 ]
+  max_queue_delay_microseconds: 5000
+}
