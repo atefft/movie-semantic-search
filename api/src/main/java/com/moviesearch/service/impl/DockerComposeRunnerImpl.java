@@ -2,7 +2,6 @@ package com.moviesearch.service.impl;
 
 import com.moviesearch.config.ProjectProperties;
 import com.moviesearch.service.DockerComposeRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,7 +20,6 @@ public class DockerComposeRunnerImpl implements DockerComposeRunner {
     private final ProjectProperties projectProperties;
     private final ProcessLauncher processLauncher;
 
-    @Autowired
     public DockerComposeRunnerImpl(ProjectProperties projectProperties) {
         this(projectProperties,
                 (cmd, dir) -> new ProcessBuilder(cmd).directory(dir.toFile()).redirectErrorStream(true).start());
