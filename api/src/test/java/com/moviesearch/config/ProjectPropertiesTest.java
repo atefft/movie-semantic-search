@@ -29,7 +29,7 @@ class ProjectPropertiesTest {
                 .run(ctx -> {
                     assertThat(ctx).hasNotFailed();
                     ProjectProperties props = ctx.getBean(ProjectProperties.class);
-                    assertThat(props.getRoot()).isNotNull();
+                    assertThat(props.getRoot()).isEqualTo(Path.of("."));
                 });
     }
 
