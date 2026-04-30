@@ -48,7 +48,7 @@ class IngestIntoQdrantServiceImplTest {
     @BeforeEach
     void setUp() {
         ProjectProperties projectProps = new ProjectProperties();
-        projectProps.setRoot(tempDir);
+        projectProps.setRoot(tempDir.toString());
 
         QdrantProperties qdrantProps = new QdrantProperties();
         qdrantProps.setBaseUrl("http://qdrant.local:6333");
