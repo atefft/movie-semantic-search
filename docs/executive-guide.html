@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — Executive Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  .layout { display: flex; gap: 0; max-width: 1200px; margin: 0 auto; padding: 32px; }
+  nav.toc { width: 200px; min-width: 200px; position: sticky; top: 32px; align-self: flex-start; margin-right: 40px; }
+  nav.toc a { display: block; padding: 6px 0; color: #58a6ff; text-decoration: none; font-size: 0.9rem; border-left: 2px solid #30363d; padding-left: 12px; margin-bottom: 4px; transition: border-color 0.15s, color 0.15s; }
+  nav.toc a:hover { color: #79c0ff; border-left-color: #58a6ff; }
+  .content { flex: 1; }
+  section { margin-bottom: 48px; }
+  section h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 12px; color: #e6edf3; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+  section p { color: #c9d1d9; line-height: 1.7; margin-bottom: 12px; font-size: 0.95rem; }
+  ol { color: #c9d1d9; line-height: 1.8; font-size: 0.95rem; padding-left: 20px; }
+  ol li { margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #161b22; color: #8b949e; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; text-align: left; border-bottom: 1px solid #30363d; }
+  td { padding: 12px 14px; border-bottom: 1px solid #21262d; color: #c9d1d9; font-size: 0.9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td a { color: #58a6ff; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  td.tool-name { font-weight: 600; color: #e6edf3; white-space: nowrap; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 24px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  section h3 { font-size: 1.05rem; font-weight: 600; color: #e6edf3; margin: 28px 0 10px; }
+  .note { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; color: #8b949e; font-size: 0.875rem; margin-bottom: 14px; }
+  code { background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 2px 5px; font-family: monospace; font-size: 0.85em; color: #c9d1d9; }
+  pre.code-block { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; color: #c9d1d9; font-family: monospace; font-size: 0.8rem; overflow-x: auto; margin: 8px 0; white-space: pre-wrap; word-break: break-all; }
+  .step-label { display: block; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #8b949e; margin-top: 10px; margin-bottom: 4px; }
+  .failure { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; margin-top: 10px; }
+  ol.walkthrough-steps > li { margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Executive Guide</span>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <a href="#overview">System Overview</a>
+    <a href="#getting-started">Getting Started</a>
+    <a href="#operator-tools">Operator Tools</a>
+    <a href="#walkthrough">Test Walkthrough</a>
+  </nav>
+
+  <div class="content">
+
+    <section id="overview">
+      <h2>System Overview</h2>
+      <p>Movie Semantic Search lets you find films by describing what you want to watch — not just by title or keyword. Type something like "a heartwarming story about a robot learning to feel" and the system surfaces the most relevant matches from thousands of movies.</p>
+      <p>The system is made up of three main parts: a data pipeline that reads and indexes movie information, a search service that understands the meaning behind your query, and a web interface where users type their searches and see results instantly.</p>
+    </section>
+
+    <section id="getting-started">
+      <h2>Getting Started</h2>
+      <ol>
+        <li><strong>Start the services.</strong> Launch the system using Docker Desktop. All components — the database, the search service, and the web interface — start together with a single command from someone on the technical team.</li>
+        <li><strong>Load the movie data.</strong> Once the services are running, use the Pipeline Runner tool listed in the Operator Tools section below to load all movie information into the system. This only needs to be done once after the initial setup.</li>
+        <li><strong>Open the Search Interface.</strong> Use the Search Interface link in the Operator Tools section below to open the movie search page in your browser. From there, type any description and browse the results.</li>
+      </ol>
+    </section>
+
+    <section id="operator-tools">
+      <h2>Operator Tools</h2>
+      <p>These tools let you inspect, test, and operate the system. Each one is accessible directly in your browser or from the command line.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Location</th>
+            <th>What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tool-name">Qdrant Dashboard</td>
+            <td><a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a></td>
+            <td>Inspect the movie database — browse what's stored and confirm the data loaded correctly.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Swagger UI</td>
+            <td><a href="http://localhost:8080/swagger-ui/index.html">http://localhost:8080/swagger-ui/index.html</a></td>
+            <td>Try the search feature directly in the browser — type a query and see results without writing any code.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Pipeline Runner</td>
+            <td>Command-line tool (run by the technical team)</td>
+            <td>Loads all movie data into the system — run this once after starting the services for the first time.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Search Interface</td>
+            <td><a href="http://localhost:8080">http://localhost:8080</a></td>
+            <td>The movie search page — the main product; type any description and find matching films.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="walkthrough">
+      <h2>End-to-End Test Walkthrough</h2>
+
+      <h3>Prerequisites</h3>
+      <p class="note">The repository root is the folder containing <code>Makefile</code>, <code>docker-compose.yml</code>, <code>api/</code>, <code>pipeline/</code>, and <code>docs/</code>.</p>
+      <ol>
+        <li>
+          <strong>Get a TMDB API key.</strong> Create a free account at <a href="https://www.themoviedb.org/signup">https://www.themoviedb.org/signup</a>. After logging in, navigate to <strong>Settings &rarr; API</strong> and generate an API key. Copy the key — you will use it in the next step.
+        </li>
+        <li>
+          <strong>Configure your environment file.</strong> From the repository root, run the following command, replacing <code>paste_your_key_here</code> with your actual TMDB API key:
+          <pre class="code-block">TMDB_KEY=paste_your_key_here &amp;&amp; cp .env.example .env &amp;&amp; sed -i "s|TMDB_API_KEY=.*|TMDB_API_KEY=$TMDB_KEY|; s|PROJECT_ROOT=.*|PROJECT_ROOT=$(pwd)|" .env</pre>
+        </li>
+        <li>
+          <strong>Install Docker Desktop.</strong> Download and install Docker Desktop from <a href="https://www.docker.com/products/docker-desktop/">https://www.docker.com/products/docker-desktop/</a>. Ensure Docker Desktop is running before continuing.
+        </li>
+        <li>
+          <strong>Start all services.</strong> From the repository root, run the following command and wait approximately 30 seconds for all containers to become healthy:
+          <pre class="code-block">docker compose up -d</pre>
+        </li>
+        <li>
+          <strong>Load the movie data.</strong> From the repository root, run the data pipeline to load all movie records into the search database. This may take several minutes:
+          <pre class="code-block">docker compose run --rm pipeline</pre>
+        </li>
+        <li>
+          <strong>Confirm the system is ready.</strong> Open <a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a> in your browser. If you see the Qdrant Dashboard without errors, all services are running and you are ready to begin the walkthrough. If you see a connection error, wait 30 seconds and refresh.
+        </li>
+      </ol>
+
+      <h3>Walkthrough Steps</h3>
+      <ol class="walkthrough-steps">
+        <li>
+          <strong>Verify the Qdrant collection record count.</strong>
+          <span class="step-label">How to verify:</span>
+          Open <a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a>, click the <strong>movies</strong> collection, and note the number shown under "Points count."
+          <span class="step-label">Expected outcome:</span>
+          The movies collection shows a non-zero record count (typically several thousand records), confirming that the data pipeline loaded movie data into the vector database.
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            The record count shows 0 or the collection does not exist. From the repository root, re-run the pipeline:
+            <pre class="code-block">docker compose run --rm pipeline</pre>
+            If the collection still shows 0 records after the pipeline completes, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: Qdrant movies collection empty after pipeline run
+Steps to reproduce:
+  1. Run `docker compose run --rm pipeline` from the repository root
+  2. Open http://localhost:6333/dashboard and click "movies"
+Expected: Points count &gt; 0
+Actual: Points count = 0</pre>
+          </div>
+        </li>
+        <li>
+          <strong>Inspect the vector field on a stored record.</strong>
+          <span class="step-label">How to verify:</span>
+          In the Qdrant Dashboard (<a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a>), click the <strong>movies</strong> collection and then click any individual record to view its payload. Confirm the vector field is present and populated with values.
+          <span class="step-label">Expected outcome:</span>
+          Each record contains a populated embedding — a long array of floating-point numbers — confirming that text embedding was applied to each movie description during ingestion.
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            The vector field is null, empty, or absent. From the repository root, re-run the pipeline to regenerate embeddings:
+            <pre class="code-block">docker compose run --rm pipeline</pre>
+            If vectors remain missing after the pipeline completes, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: Qdrant movie records missing vector embeddings
+Steps to reproduce:
+  1. Run `docker compose run --rm pipeline` from the repository root
+  2. Open a record in http://localhost:6333/dashboard
+Expected: Vector field populated with float array
+Actual: Vector field is null or absent</pre>
+          </div>
+        </li>
+        <li>
+          <strong>Check the collection status.</strong>
+          <span class="step-label">How to verify:</span>
+          In the Qdrant Dashboard, click the <strong>movies</strong> collection and note the status indicator at the top of the collection page. The status should show <strong>Green</strong>.
+          <span class="step-label">Expected outcome:</span>
+          The collection status is Green, indicating that all segments are fully indexed and the collection is ready to serve search queries.
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            The status shows Red, Yellow, or "Indexing." Wait 60 seconds and refresh. If the problem persists, restart the Qdrant service from the repository root:
+            <pre class="code-block">docker compose restart qdrant</pre>
+            If the collection status never becomes Green, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: Qdrant movies collection stuck in non-Green status
+Steps to reproduce:
+  1. Open http://localhost:6333/dashboard from the repository root
+  2. Click the "movies" collection
+Expected: Collection status = Green
+Actual: Collection status = [observed status]</pre>
+          </div>
+        </li>
+        <li>
+          <strong>Execute a search query in Swagger UI.</strong>
+          <span class="step-label">How to verify:</span>
+          Open Swagger UI at <a href="http://localhost:8080/swagger-ui/index.html">http://localhost:8080/swagger-ui/index.html</a>. Locate the <strong>GET /api/search</strong> endpoint. Click <strong>Try it out</strong>, enter <code>sci-fi space adventure</code> in the query field, and click <strong>Execute</strong>. Confirm the response area shows a valid HTTP response.
+          <span class="step-label">Expected outcome:</span>
+          The API returns HTTP 200 with a JSON body containing a list of movie results relevant to science fiction and space exploration.
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            The API returns an error or an empty result set. From the repository root, confirm the API service is running:
+            <pre class="code-block">docker compose ps api</pre>
+            If the container is not running, start it from the repository root:
+            <pre class="code-block">docker compose up -d api</pre>
+            If the API is running but returns errors or empty results, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: GET /api/search returns error or empty results for "sci-fi space adventure"
+Steps to reproduce:
+  1. Open http://localhost:8080/swagger-ui/index.html
+  2. Find GET /api/search, click "Try it out"
+  3. Enter query: sci-fi space adventure
+  4. Click Execute from the repository root context
+Expected: HTTP 200 with list of relevant movie results
+Actual: [observed response code and body]</pre>
+          </div>
+        </li>
+        <li>
+          <strong>Verify result relevance.</strong>
+          <span class="step-label">How to verify:</span>
+          Review the movies returned in step 4. Look at the titles and overviews of the top results and assess whether they are science fiction or space-themed films.
+          <span class="step-label">Expected outcome:</span>
+          The top results are recognizable science fiction or space-themed films (for example: Star Wars, Interstellar, Gravity, The Martian, or 2001: A Space Odyssey), confirming that semantic similarity search is surfacing movies by meaning rather than exact keyword matching.
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            The results consist mostly of unrelated films (comedies, dramas, or documentaries unrelated to space). From the repository root, verify that the vector embeddings were generated correctly by re-running the pipeline:
+            <pre class="code-block">docker compose run --rm pipeline</pre>
+            If results remain irrelevant after re-running the pipeline, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: Search results for "sci-fi space adventure" are not relevant
+Steps to reproduce:
+  1. Follow steps 1-4 of the End-to-End Test Walkthrough from the repository root
+  2. Enter query: sci-fi space adventure via GET /api/search in Swagger UI
+Expected: Top results are science fiction / space-themed films
+Actual: Results are [describe observed genres or titles]</pre>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <a class="back-link" href="index.html">← Back to Overview</a>
+
+  </div>
+</div>
+
+<footer>Movie Semantic Search</footer>
+
+</body>
+</html>
