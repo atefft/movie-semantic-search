@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — WalkthroughSection</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; word-break: break-all; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .prereq-list { list-style: decimal; padding-left: 20px; color: #c9d1d9; font-size: 0.875rem; line-height: 1.7; }
+  .prereq-list li { margin-bottom: 12px; }
+  .remediation { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px 20px; margin-top: 16px; }
+  .remediation h4 { font-size: 0.875rem; font-weight: 600; color: #f85149; margin-bottom: 10px; }
+  .remediation p { color: #8b949e; font-size: 0.875rem; line-height: 1.6; margin-bottom: 8px; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #88 / WalkthroughSection</span>
+</header>
+
+<main>
+  <h2>WalkthroughSection</h2>
+  <span class="badge">#88 — Executive guide: end-to-end testing walkthrough</span>
+  <p class="subtitle">Spec for the End-to-End Test Walkthrough section of <code>docs/executive-guide.html</code> — a step-by-step guide for non-technical operators to verify the full Movie Semantic Search pipeline from setup through a live search query.</p>
+
+  <h3>Overview</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The WalkthroughSection expands the stub <code>id="walkthrough"</code> section in the executive guide with a complete,
+    operator-facing end-to-end test procedure. It covers environment setup (TMDB API key, <code>.env</code> configuration,
+    Docker Desktop installation), service startup, data pipeline execution, and five verification steps that confirm the
+    system is functioning correctly. Each verification step includes an expected outcome and a failure remediation block so
+    an operator can resolve issues without engineering support.
+  </p>
+
+  <h3>Pipeline Steps</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Step</th><th>Action</th><th>Verification</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Verify Qdrant collection record count</td>
+        <td>Open Qdrant Dashboard → click <code>movies</code> → Points count is non-zero</td>
+        <td><span class="tag happy">happy-path</span><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Inspect the vector field on a stored record</td>
+        <td>Click any record in Qdrant Dashboard; confirm vector field is a populated float array</td>
+        <td><span class="tag happy">happy-path</span><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Check the collection status</td>
+        <td>Collection status indicator shows <strong>Green</strong></td>
+        <td><span class="tag happy">happy-path</span><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Execute a search query in Swagger UI</td>
+        <td>GET <code>/api/search</code> with query <code>sci-fi space adventure</code> returns HTTP 200 with results</td>
+        <td><span class="tag happy">happy-path</span><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Verify result relevance</td>
+        <td>Top results are recognizable science fiction or space-themed films</td>
+        <td><span class="tag happy">happy-path</span><span class="tag error">error</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Prerequisites</h3>
+  <ol class="prereq-list">
+    <li>
+      <strong>Get a TMDB API key.</strong> Create a free account at <a href="https://www.themoviedb.org/signup" style="color:#58a6ff">https://www.themoviedb.org/signup</a>. After logging in, navigate to <strong>Settings → API</strong> and generate an API key.
+    </li>
+    <li>
+      <strong>Configure your environment file.</strong> From the repository root, run the following one-liner, replacing <code>paste_your_key_here</code> with your actual TMDB API key:
+      <div class="code-block">TMDB_KEY=paste_your_key_here &amp;&amp; cp .env.example .env &amp;&amp; sed -i "s|TMDB_API_KEY=.*|TMDB_API_KEY=$TMDB_KEY|; s|PROJECT_ROOT=.*|PROJECT_ROOT=$(pwd)|" .env</div>
+    </li>
+    <li>
+      <strong>Install Docker Desktop.</strong> Download from <a href="https://www.docker.com/products/docker-desktop/" style="color:#58a6ff">https://www.docker.com/products/docker-desktop/</a>. Ensure Docker Desktop is running before continuing.
+    </li>
+    <li>
+      <strong>Start all services.</strong> From the repository root, run: <div class="code-block">docker compose up -d</div> Wait approximately 30 seconds for all containers to become healthy.
+    </li>
+    <li>
+      <strong>Load the movie data.</strong> From the repository root, run the data pipeline: <div class="code-block">docker compose run --rm pipeline</div> This may take several minutes.
+    </li>
+    <li>
+      <strong>Confirm the system is ready.</strong> Open <code>http://localhost:6333/dashboard</code> in your browser. A visible Qdrant Dashboard without errors confirms all services are running.
+    </li>
+  </ol>
+
+  <h3>Failure Remediation Blocks</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Each walkthrough step includes a failure remediation block with a recovery command and a bug-report template.
+    The remediation blocks follow a consistent pattern:
+  </p>
+
+  <div class="remediation">
+    <h4>Step 1 — Qdrant collection empty (Points count = 0)</h4>
+    <p>Re-run the pipeline from the repository root:</p>
+    <div class="code-block">docker compose run --rm pipeline</div>
+    <p style="margin-top:10px;">If the collection still shows 0 records after the pipeline completes, file a bug using <code>/create-feature-request</code> with title: <em>Qdrant movies collection empty after pipeline run</em>.</p>
+  </div>
+
+  <div class="remediation">
+    <h4>Step 2 — Vector field null, empty, or absent on stored records</h4>
+    <p>Re-run the pipeline to regenerate embeddings:</p>
+    <div class="code-block">docker compose run --rm pipeline</div>
+    <p style="margin-top:10px;">If vectors remain missing, file a bug: <em>Qdrant movie records missing vector embeddings</em>.</p>
+  </div>
+
+  <div class="remediation">
+    <h4>Step 3 — Collection status not Green (Red, Yellow, or "Indexing")</h4>
+    <p>Wait 60 seconds and refresh. If the problem persists, restart Qdrant:</p>
+    <div class="code-block">docker compose restart qdrant</div>
+    <p style="margin-top:10px;">If the status never becomes Green, file a bug: <em>Qdrant movies collection stuck in non-Green status</em>.</p>
+  </div>
+
+  <div class="remediation">
+    <h4>Step 4 — GET /api/search returns error or empty results</h4>
+    <p>Confirm the API service is running:</p>
+    <div class="code-block">docker compose ps api</div>
+    <p style="margin-top:10px;">If the container is not running, start it:</p>
+    <div class="code-block">docker compose up -d api</div>
+    <p style="margin-top:10px;">If the API is running but returns errors, file a bug: <em>GET /api/search returns error or empty results for "sci-fi space adventure"</em>.</p>
+  </div>
+
+  <div class="remediation">
+    <h4>Step 5 — Search results are not relevant</h4>
+    <p>Re-run the pipeline to verify embeddings were generated correctly:</p>
+    <div class="code-block">docker compose run --rm pipeline</div>
+    <p style="margin-top:10px;">If results remain irrelevant after re-running, file a bug: <em>Search results for "sci-fi space adventure" are not relevant</em>.</p>
+  </div>
+
+  <h3>Acceptance Criteria</h3>
+  <ul class="criteria-list">
+    <li>The <code>id="walkthrough"</code> section in <code>docs/executive-guide.html</code> contains a Prerequisites heading with all six setup steps, including the <code>.env</code> one-liner in a <code>&lt;pre&gt;</code> code block</li>
+    <li>The Walkthrough Steps list contains all five numbered steps, each with a "How to verify" label, an "Expected outcome" label, and an "If this doesn't work" failure remediation block</li>
+    <li>Each failure remediation block includes the recovery command in a <code>&lt;pre&gt;</code> code block and a bug-report template</li>
+    <li>The page renders correctly in a browser without layout breaks at standard viewport widths</li>
+    <li>All links within the section resolve correctly (Qdrant Dashboard, Swagger UI, Docker Desktop, TMDB signup)</li>
+    <li>No unexplained engineering jargon appears in operator-visible content</li>
+  </ul>
+
+  <a class="back-link" href="../../index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
