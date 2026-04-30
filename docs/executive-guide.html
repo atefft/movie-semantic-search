@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — Executive Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  .layout { display: flex; gap: 0; max-width: 1200px; margin: 0 auto; padding: 32px; }
+  nav.toc { width: 200px; min-width: 200px; position: sticky; top: 32px; align-self: flex-start; margin-right: 40px; }
+  nav.toc a { display: block; padding: 6px 0; color: #58a6ff; text-decoration: none; font-size: 0.9rem; border-left: 2px solid #30363d; padding-left: 12px; margin-bottom: 4px; transition: border-color 0.15s, color 0.15s; }
+  nav.toc a:hover { color: #79c0ff; border-left-color: #58a6ff; }
+  .content { flex: 1; }
+  section { margin-bottom: 48px; }
+  section h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 12px; color: #e6edf3; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+  section p { color: #c9d1d9; line-height: 1.7; margin-bottom: 12px; font-size: 0.95rem; }
+  ol { color: #c9d1d9; line-height: 1.8; font-size: 0.95rem; padding-left: 20px; }
+  ol li { margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #161b22; color: #8b949e; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; text-align: left; border-bottom: 1px solid #30363d; }
+  td { padding: 12px 14px; border-bottom: 1px solid #21262d; color: #c9d1d9; font-size: 0.9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td a { color: #58a6ff; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  td.tool-name { font-weight: 600; color: #e6edf3; white-space: nowrap; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 24px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Executive Guide</span>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <a href="#overview">System Overview</a>
+    <a href="#getting-started">Getting Started</a>
+    <a href="#operator-tools">Operator Tools</a>
+    <a href="#walkthrough">Test Walkthrough</a>
+  </nav>
+
+  <div class="content">
+
+    <section id="overview">
+      <h2>System Overview</h2>
+      <p>Movie Semantic Search lets you find films by describing what you want to watch — not just by title or keyword. Type something like "a heartwarming story about a robot learning to feel" and the system surfaces the most relevant matches from thousands of movies.</p>
+      <p>The system is made up of three main parts: a data pipeline that reads and indexes movie information, a search service that understands the meaning behind your query, and a web interface where users type their searches and see results instantly.</p>
+    </section>
+
+    <section id="getting-started">
+      <h2>Getting Started</h2>
+      <ol>
+        <li><strong>Start the services.</strong> Launch the system using Docker Desktop. All components — the database, the search service, and the web interface — start together with a single command from someone on the technical team.</li>
+        <li><strong>Load the movie data.</strong> Once the services are running, use the Pipeline Runner tool listed in the Operator Tools section below to load all movie information into the system. This only needs to be done once after the initial setup.</li>
+        <li><strong>Open the Search Interface.</strong> Use the Search Interface link in the Operator Tools section below to open the movie search page in your browser. From there, type any description and browse the results.</li>
+      </ol>
+    </section>
+
+    <section id="operator-tools">
+      <h2>Operator Tools</h2>
+      <p>These tools let you inspect, test, and operate the system. Each one is accessible directly in your browser or from the command line.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Location</th>
+            <th>What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tool-name">Qdrant Dashboard</td>
+            <td><a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a></td>
+            <td>Inspect the movie database — browse what's stored and confirm the data loaded correctly.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Swagger UI</td>
+            <td><a href="http://localhost:8080/swagger-ui/index.html">http://localhost:8080/swagger-ui/index.html</a></td>
+            <td>Try the search feature directly in the browser — type a query and see results without writing any code.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Pipeline Runner</td>
+            <td>Command-line tool (run by the technical team)</td>
+            <td>Loads all movie data into the system — run this once after starting the services for the first time.</td>
+          </tr>
+          <tr>
+            <td class="tool-name">Search Interface</td>
+            <td><a href="http://localhost:8080">http://localhost:8080</a></td>
+            <td>The movie search page — the main product; type any description and find matching films.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="walkthrough">
+      <h2>End-to-End Test Walkthrough</h2>
+      <p>Step-by-step testing instructions are coming soon.</p>
+    </section>
+
+    <a class="back-link" href="index.html">← Back to Overview</a>
+
+  </div>
+</div>
+
+<footer>Movie Semantic Search</footer>
+
+</body>
+</html>
