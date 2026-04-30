@@ -40,7 +40,7 @@ class GenerateEmbeddingsServiceImplTest {
     @BeforeEach
     void setUp() {
         ProjectProperties props = new ProjectProperties();
-        props.setRoot(tempDir);
+        props.setRoot(tempDir.toString());
         service = new GenerateEmbeddingsServiceImpl(pythonScriptRunner, props);
     }
 

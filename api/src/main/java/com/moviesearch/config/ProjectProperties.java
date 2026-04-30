@@ -1,6 +1,6 @@
 package com.moviesearch.config;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -10,14 +10,14 @@ import java.nio.file.Path;
 @ConfigurationProperties(prefix = "project")
 public class ProjectProperties {
 
-    @NotNull
-    private Path root;
+    @NotBlank
+    private String root;
 
     public Path getRoot() {
-        return root;
+        return Path.of(root);
     }
 
-    public void setRoot(Path root) {
+    public void setRoot(String root) {
         this.root = root;
     }
 }
