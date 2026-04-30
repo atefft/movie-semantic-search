@@ -1,0 +1,42 @@
+services:
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.01-py3
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model-repository:/models
+    command: ["tritonserver", "--model-repository=/models", "--log-verbose=0"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/v2/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:6333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      triton:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+
+volumes:
+  qdrant_data: {}
