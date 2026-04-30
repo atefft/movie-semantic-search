@@ -2,11 +2,8 @@ package com.moviesearch.service.step.impl;
 
 import com.moviesearch.exception.GenerateEmbeddingsServiceException;
 import com.moviesearch.service.step.GenerateEmbeddingsService;
-import org.springframework.stereotype.Service;
-
 import java.util.function.Consumer;
 
-@Service
 public class MockGenerateEmbeddingsService implements GenerateEmbeddingsService {
 
     private static final String[] LOGS = {
