@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — TritonServiceManagerImpl</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #5 / TritonServiceManagerImpl</span>
+</header>
+
+<main>
+  <h2>TritonServiceManagerImpl</h2>
+  <p class="subtitle">Real implementation of <code>TritonServiceManager</code>. Starts and stops the Triton container via <code>DockerComposeRunner</code> and polls <code>GET :8000/v2/health/ready</code> for live status.</p>
+
+  <h3>Operations</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Method</th><th>Docker Compose command</th><th>Error type</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>start()</code></td>
+        <td><code>docker compose up -d triton</code></td>
+        <td><code>TritonServiceException</code> (START_FAILED)</td>
+      </tr>
+      <tr>
+        <td><code>stop()</code></td>
+        <td><code>docker compose stop triton</code></td>
+        <td><code>TritonServiceException</code> (STOP_FAILED)</td>
+      </tr>
+      <tr>
+        <td><code>getStatus()</code></td>
+        <td>HTTP GET <code>:8000/v2/health/ready</code></td>
+        <td>Returns <code>STOPPED</code> on any exception</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Health Check</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    <code>getStatus()</code> constructs the URL as <code>http://&lt;triton.host&gt;:8000/v2/health/ready</code>
+    and issues a GET with a 2-second connect timeout. HTTP 200 → <code>RUNNING</code>;
+    any other response or exception → <code>STOPPED</code>. Status is always polled live — never cached.
+  </p>
+
+  <h3>Sequence</h3>
+  <div class="diagram-container" style="margin-top:8px;">
+    <pre class="mermaid">
+sequenceDiagram
+  participant C as OperatorController
+  participant T as TritonServiceManagerImpl
+  participant D as DockerComposeRunner
+  participant H as Triton HTTP :8000
+
+  C->>T: start()
+  T->>D: run("up", "-d", "triton")
+  D-->>T: (process exits 0)
+  T-->>C: (void)
+
+  C->>T: getStatus()
+  T->>H: GET /v2/health/ready
+  H-->>T: 200 OK
+  T-->>C: RUNNING
+    </pre>
+  </div>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Bean</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>DockerComposeRunner</code></td>
+        <td>Executes <code>docker compose</code> subcommands from <code>project.root</code></td>
+      </tr>
+      <tr>
+        <td><code>TritonProperties</code></td>
+        <td>Supplies <code>triton.host</code> for the health-check URL</td>
+      </tr>
+      <tr>
+        <td><code>HttpClient</code></td>
+        <td>Issues the health-check request (2-second connect timeout)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+await mermaid.run();
+</script>
+</body>
+</html>
