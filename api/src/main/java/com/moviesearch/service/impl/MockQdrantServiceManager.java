@@ -2,9 +2,7 @@ package com.moviesearch.service.impl;
 
 import com.moviesearch.model.ServiceStatus;
 import com.moviesearch.service.QdrantServiceManager;
-import org.springframework.stereotype.Service;
 
-@Service
 public class MockQdrantServiceManager implements QdrantServiceManager {
 
     private volatile ServiceStatus status = ServiceStatus.STOPPED;
