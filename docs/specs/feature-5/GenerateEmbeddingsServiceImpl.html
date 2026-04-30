@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — GenerateEmbeddingsServiceImpl</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #5 / GenerateEmbeddingsServiceImpl</span>
+</header>
+
+<main>
+  <h2>GenerateEmbeddingsServiceImpl</h2>
+  <p class="subtitle">Implements <code>GenerateEmbeddingsService</code>. Runs <code>pipeline/03_embed_corpus.py</code> via <code>PythonScriptRunner</code> to batch-embed 42k movie plot summaries. Skips execution when output files already exist and <code>force=false</code>.</p>
+
+  <h3>Idempotency Check</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    When <code>force=false</code>, the service checks for both output files under <code>project.root</code>.
+    If both exist, it logs a skip message and returns without running the script.
+  </p>
+  <table class="prop-table" style="margin-top:16px;">
+    <thead>
+      <tr><th>Output file</th><th>Path (relative to project.root)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>embeddings.npy</code></td>
+        <td><code>data/embeddings/embeddings.npy</code></td>
+      </tr>
+      <tr>
+        <td><code>metadata.json</code></td>
+        <td><code>data/embeddings/metadata.json</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Execute Flow</h3>
+  <div class="diagram-container" style="margin-top:8px;">
+    <pre class="mermaid">
+flowchart TD
+  A[execute&#40;onLog, force&#41;] --> B{force=false AND\nboth files exist?}
+  B -- Yes --> C[onLog: &quot;Embeddings already generated, skipping.&quot;\nreturn]
+  B -- No --> D[pythonScriptRunner.run&#40;pipeline/03_embed_corpus.py, onLog&#41;]
+  D --> E{exit 0?}
+  E -- Yes --> F[return]
+  E -- No --> G[throw GenerateEmbeddingsServiceException]
+    </pre>
+  </div>
+
+  <h3>Script</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Script path</td>
+        <td><code>pipeline/03_embed_corpus.py</code> (relative to <code>project.root</code>)</td>
+      </tr>
+      <tr>
+        <td>Runner</td>
+        <td><code>PythonScriptRunner</code> — no extra environment variables needed</td>
+      </tr>
+      <tr>
+        <td>Log consumer</td>
+        <td>Caller-supplied <code>Consumer&lt;String&gt; onLog</code> receives each output line</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+await mermaid.run();
+</script>
+</body>
+</html>

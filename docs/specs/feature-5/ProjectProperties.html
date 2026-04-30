@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — ProjectProperties</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table td:nth-child(2) { color: #f2cc60; font-family: "SFMono-Regular", Consolas, monospace; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #5 / ProjectProperties</span>
+</header>
+
+<main>
+  <h2>ProjectProperties</h2>
+  <p class="subtitle">Spring Boot configuration properties bound to the <code>project.*</code> prefix. Supplies <code>project.root</code> — the working directory for all <code>docker compose</code> and Python script invocations.</p>
+
+  <h3>Configuration Properties</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>project.root</td>
+        <td>Path</td>
+        <td>Yes</td>
+        <td>Absolute path to the repository root. Used as the working directory for <code>docker compose</code> commands and Python script execution.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Class Declaration</h3>
+  <div class="code-block">
+<span class="an">@Validated</span>
+<span class="an">@ConfigurationProperties</span>(prefix = <span style="color:#a5d6ff">"project"</span>)
+<span class="kw">public class</span> ProjectProperties {
+
+    <span class="an">@NotNull</span>
+    <span class="kw">private</span> Path root;
+
+    <span class="kw">public</span> Path <span style="color:#d2a8ff">getRoot</span>() { <span class="kw">return</span> root; }
+    <span class="kw">public void</span> <span style="color:#d2a8ff">setRoot</span>(Path root) { <span class="kw">this</span>.root = root; }
+}
+  </div>
+
+  <h3>application.yml Example</h3>
+  <div class="code-block">
+<span class="kw">project</span>:
+  <span class="kw">root</span>: <span style="color:#a5d6ff">/path/to/movie-semantic-search</span>
+  </div>
+
+  <h3>Usage</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Injected into <code>DockerComposeRunnerImpl</code>, <code>GenerateEmbeddingsServiceImpl</code>,
+    <code>IngestIntoQdrantServiceImpl</code>, and <code>EnrichWithTmdbServiceImpl</code> to resolve
+    script paths and set the working directory. The <code>@NotNull</code> constraint ensures the
+    application fails fast at startup if the property is missing.
+  </p>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+await mermaid.run();
+</script>
+</body>
+</html>
