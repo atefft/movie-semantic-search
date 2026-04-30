@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @Service
@@ -15,13 +16,17 @@ public class PythonScriptRunnerImpl implements PythonScriptRunner {
 
     @FunctionalInterface
     interface ProcessLauncher {
-        Process launch(List<String> cmd) throws IOException;
+        Process launch(List<String> cmd, Map<String, String> extraEnv) throws IOException;
     }
 
     private final ProcessLauncher processLauncher;
 
     public PythonScriptRunnerImpl() {
-        this(cmd -> new ProcessBuilder(cmd).redirectErrorStream(true).start());
+        this((cmd, extraEnv) -> {
+            ProcessBuilder pb = new ProcessBuilder(cmd).redirectErrorStream(true);
+            pb.environment().putAll(extraEnv);
+            return pb.start();
+        });
     }
 
     PythonScriptRunnerImpl(ProcessLauncher processLauncher) {
@@ -30,7 +35,12 @@ public class PythonScriptRunnerImpl implements PythonScriptRunner {
 
     @Override
     public void run(Path script, Consumer<String> onLog) throws IOException, InterruptedException {
-        Process process = processLauncher.launch(List.of("python", script.toString()));
+        run(script, onLog, Map.of());
+    }
+
+    @Override
+    public void run(Path script, Consumer<String> onLog, Map<String, String> extraEnv) throws IOException, InterruptedException {
+        Process process = processLauncher.launch(List.of("python", script.toString()), extraEnv);
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()))) {
             String line;

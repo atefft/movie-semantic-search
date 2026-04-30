@@ -16,6 +16,7 @@ autocomplete:
 
 tmdb:
   poster-base-url: https://image.tmdb.org/t/p/w200
+  api-key: ${TMDB_API_KEY:}
 
 dataset:
   corpus-url: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
