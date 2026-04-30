@@ -2,6 +2,10 @@ data/raw/
 data/embeddings/
 api/data/corpus/
 model-repository/**/model.onnx
+model-repository/**/tokenizer.json
+model-repository/**/tokenizer_config.json
+model-repository/**/vocab.txt
+model-repository/**/special_tokens_map.json
 api/target/
 pipeline/__pycache__/
 pipeline/tests/__pycache__/
