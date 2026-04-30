@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — ExecutiveGuide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / ExecutiveGuide</span>
+</header>
+
+<main>
+  <h2>ExecutiveGuide</h2>
+  <p class="subtitle">Spec for the executive-facing guide page (<code>docs/executive-guide.html</code>) — a non-technical orientation document for stakeholders running or evaluating the system.</p>
+
+  <h3>Purpose</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The executive guide gives a non-technical audience a single page to understand the system, start it up,
+    and verify it is working — without requiring knowledge of Docker, gRPC, or vector databases.
+    All content avoids unexplained CLI commands, code snippets, and engineering jargon.
+  </p>
+
+  <h3>Page Structure</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Section ID</th><th>Heading</th><th>Content summary</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>overview</td>
+        <td>System Overview</td>
+        <td>Plain-English description of what the system does (movie search by description), who it is for, and how results are ranked by meaning rather than keywords</td>
+      </tr>
+      <tr>
+        <td>getting-started</td>
+        <td>Getting Started</td>
+        <td>Three numbered steps: (1) start services via Docker, (2) load movie data using the Pipeline Runner tool, (3) open the Search Interface link</td>
+      </tr>
+      <tr>
+        <td>operator-tools</td>
+        <td>Operator Tools</td>
+        <td>Table listing four tools with working local URLs and one-sentence plain-English descriptions (see table below)</td>
+      </tr>
+      <tr>
+        <td>walkthrough</td>
+        <td>End-to-End Test Walkthrough</td>
+        <td>Stub section; step-by-step testing content covered separately in feature #88</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Operator Tools Table</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Tool</th><th>URL</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Qdrant Dashboard</td>
+        <td><code>http://localhost:6333/dashboard</code></td>
+        <td>Inspect the movie database — browse what's stored and confirm the data loaded correctly</td>
+      </tr>
+      <tr>
+        <td>Swagger UI</td>
+        <td><code>http://localhost:8080/swagger-ui/index.html</code></td>
+        <td>Try the search API directly in the browser — type a query and see results without writing any code</td>
+      </tr>
+      <tr>
+        <td>Pipeline Runner</td>
+        <td><code>make pipeline</code> (command-line tool)</td>
+        <td>Loads all movie data into the system — run this once after starting the services for the first time</td>
+      </tr>
+      <tr>
+        <td>Search Interface</td>
+        <td><code>http://localhost:8080</code></td>
+        <td>The movie search UI — the main product; type any description and find matching films</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Layout</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    The page uses a two-column CSS layout: a sticky sidebar (~200px) on the left with anchor links to all four
+    sections, and the main content area on the right. Styling matches the existing dark GitHub theme
+    (<code>background: #0d1117</code>) used across the rest of the docs site.
+  </p>
+
+  <h3>Acceptance Criteria</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Criterion</th><th>Detail</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>File exists</td>
+        <td><code>docs/executive-guide.html</code></td>
+      </tr>
+      <tr>
+        <td>Reachable from index</td>
+        <td><code>docs/index.html</code> contains <code>&lt;a href="executive-guide.html"&gt;</code></td>
+      </tr>
+      <tr>
+        <td>Page title</td>
+        <td><code>Movie Semantic Search — Executive Guide</code></td>
+      </tr>
+      <tr>
+        <td>Section IDs</td>
+        <td><code>overview</code>, <code>getting-started</code>, <code>operator-tools</code>, <code>walkthrough</code></td>
+      </tr>
+      <tr>
+        <td>Sidebar TOC</td>
+        <td>Four anchor links: <code>#overview</code>, <code>#getting-started</code>, <code>#operator-tools</code>, <code>#walkthrough</code></td>
+      </tr>
+      <tr>
+        <td>Operator tools table</td>
+        <td>Four rows: Qdrant Dashboard, Swagger UI, Pipeline Runner, Search Interface</td>
+      </tr>
+      <tr>
+        <td>No jargon</td>
+        <td>No unexplained CLI commands, code snippets, or engineering jargon in visible page content</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
