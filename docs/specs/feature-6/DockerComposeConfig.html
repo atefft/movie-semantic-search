@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — DockerComposeConfig</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .diagram-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; overflow: auto; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .an { color: #f2cc60; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+
+  #tooltip {
+    position: fixed; z-index: 9999; background: #1c2128; border: 1px solid #388bfd;
+    border-radius: 8px; padding: 12px 16px; max-width: 320px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tip-title { font-weight: 600; font-size: 0.9rem; color: #79c0ff; margin-bottom: 6px; }
+  #tooltip .tip-body { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / DockerComposeConfig</span>
+</header>
+
+<main>
+  <h2>DockerComposeConfig</h2>
+  <p class="subtitle">Documents <code>docker-compose.yml</code> at the repo root — defines the three services (Triton, Qdrant, API) and their wiring.</p>
+
+  <h3>Services</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Service</th><th>Image</th><th>Ports</th><th>Healthcheck endpoint</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>triton</td>
+        <td><code>nvcr.io/nvidia/tritonserver:24.01-py3</code></td>
+        <td>8000, 8001, 8002</td>
+        <td><code>GET :8000/v2/health/ready</code></td>
+      </tr>
+      <tr>
+        <td>qdrant</td>
+        <td><code>qdrant/qdrant:v1.9.2</code></td>
+        <td>6333, 6334</td>
+        <td><code>GET :6333/healthz</code></td>
+      </tr>
+      <tr>
+        <td>api</td>
+        <td>built from <code>Dockerfile</code></td>
+        <td>8080</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Service Details</h3>
+
+  <h3 style="margin-top:16px;">triton</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Mounts <code>./model-repository:/models</code>. Exposes HTTP (8000), gRPC (8001), and metrics (8002) ports.
+    The healthcheck polls <code>GET :8000/v2/health/ready</code> to confirm the model is loaded before dependent services start.
+  </p>
+
+  <h3>qdrant</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Uses named volume <code>qdrant_data:/qdrant/storage</code> to persist the vector index across restarts.
+    Exposes REST (6333) and gRPC (6334) ports. The healthcheck polls <code>GET :6333/healthz</code>.
+  </p>
+
+  <h3>api</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Built from the repo-root <code>Dockerfile</code>. Exposed on port 8080.
+    Declares <code>depends_on</code> for both <code>triton</code> and <code>qdrant</code> with <code>condition: service_healthy</code>,
+    ensuring the API container only starts after both backends pass their healthchecks.
+  </p>
+
+  <h3>Dependency Ordering</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    Docker Compose starts <code>triton</code> and <code>qdrant</code> in parallel, waits for both to report healthy, then starts <code>api</code>.
+    This guarantees that the Spring Boot application can connect to Triton on gRPC port 8001 and Qdrant on REST port 6333 immediately on startup.
+  </p>
+
+  <h3>Named Volumes</h3>
+  <div class="code-block">
+<span class="kw">volumes</span>:
+  qdrant_data: {}
+  </div>
+  <p style="color:#8b949e;font-size:0.875rem;margin-top:8px;">
+    The <code>qdrant_data</code> volume is declared at the top level so Docker manages its lifecycle independently of the container.
+    It is removed only when <code>make clean</code> runs <code>docker compose down -v</code>.
+  </p>
+
+  <a class="back-link" href="../../index.html">← Back to Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+<div id="tooltip"><div class="tip-title" id="tip-title"></div><div class="tip-body" id="tip-body"></div></div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+await mermaid.run();
+</script>
+</body>
+</html>
