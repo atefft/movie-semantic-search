@@ -6,6 +6,7 @@ triton:
 
 qdrant:
   base-url: http://localhost:6333
+  mock: false
 
 search:
   default-limit: 10
