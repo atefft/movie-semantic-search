@@ -12,3 +12,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy pipeline scripts; tests are excluded
 COPY *.py ./
+COPY load-model.sh load-data.sh ./
+RUN chmod +x load-model.sh load-data.sh

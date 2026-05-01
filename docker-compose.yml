@@ -51,6 +51,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./model-repository:/app/model-repository
+    command: ["/app/load-model.sh"]
 
   load-data:
     profiles: [load-data]
