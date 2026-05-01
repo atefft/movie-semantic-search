@@ -1,0 +1,29 @@
+name: Docker Compose Startup Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  STARTUP_TIMEOUT: 120
+
+jobs:
+  startup-check:
+    name: Docker Compose Startup Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start services
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait --wait-timeout ${{ env.STARTUP_TIMEOUT }}
+
+      - name: Log service states
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml ps
+
+      - name: Tear down services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — DockerComposeStartupWorkflow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; color: #c9d1d9; margin-top: 20px; margin-bottom: 6px; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-label { font-size: 0.75rem; color: #8b949e; font-family: "SFMono-Regular", Consolas, monospace; margin-top: 12px; margin-bottom: 4px; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; white-space: pre; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .callout { border-radius: 6px; padding: 14px 18px; margin-top: 16px; font-size: 0.875rem; line-height: 1.6; }
+  .callout.note { background: #1c2a3a; border: 1px solid #388bfd; color: #c9d1d9; }
+  .callout.note strong { color: #79c0ff; }
+  .callout.warning { background: #2d2008; border: 1px solid #d29922; color: #c9d1d9; }
+  .callout.warning strong { color: #e3b341; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / DockerComposeStartupWorkflow</span>
+</header>
+
+<main>
+  <h2>DockerComposeStartupWorkflow</h2>
+  <span class="badge">#159 — CI job for Docker Compose service startup verification</span>
+  <p class="subtitle">GitHub Actions workflow that verifies the three core Docker Compose services (triton stub, qdrant, api) can start and reach a healthy state on every pull request and push targeting <code>main</code>.</p>
+
+  <h3>Overview</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    This component adds a GitHub Actions workflow (<code>.github/workflows/docker-compose-check.yml</code>) that runs on every pull request targeting <code>main</code> and every push to <code>main</code>. Task-branch-to-feature-branch PRs are excluded to avoid rate limits. Because the real Triton image (<code>nvcr.io/nvidia/tritonserver:24.01-py3</code>) is ~15–20 GB and requires a GPU, a <code>docker-compose.ci.yml</code> override replaces the Triton service with a lightweight Python HTTP stub that satisfies Triton's healthcheck (<code>GET /v2/health/ready → 200</code>). The api service builds from the actual repo Dockerfile, making this a real smoke test of the application build and startup path. Qdrant starts from its published image unmodified.
+  </p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>STARTUP_TIMEOUT</code></td>
+        <td>integer (seconds)</td>
+        <td>Max seconds to wait for all services to become healthy</td>
+        <td>Workflow-level env var, default <code>120</code>. Passed to <code>--wait-timeout</code>.</td>
+      </tr>
+      <tr>
+        <td>Workflow trigger</td>
+        <td>GitHub event</td>
+        <td>When the workflow fires</td>
+        <td><code>pull_request</code> with <code>branches: [main]</code>; <code>push</code> with <code>branches: [main]</code></td>
+      </tr>
+      <tr>
+        <td>Required status check</td>
+        <td>GitHub branch protection</td>
+        <td>Whether the job blocks merges to <code>main</code></td>
+        <td>Must be enabled in repo Settings → Branches → main after the workflow file is merged</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>docker compose</code> CLI</td>
+        <td>Docker Compose v2</td>
+        <td>Pre-installed on <code>ubuntu-latest</code> runner</td>
+      </tr>
+      <tr>
+        <td><code>docker-compose.yml</code></td>
+        <td>Compose file</td>
+        <td>Base service definitions (triton, qdrant, api, profiles)</td>
+      </tr>
+      <tr>
+        <td><code>docker-compose.ci.yml</code></td>
+        <td>Compose override file</td>
+        <td>Replaces triton with HTTP stub; checked into repo</td>
+      </tr>
+      <tr>
+        <td><code>Dockerfile</code> (repo root)</td>
+        <td>Docker build context</td>
+        <td>Used by the <code>api</code> service build</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependency Mock Behaviors</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    This is a CI workflow, not a unit-testable class. The tables below describe failure modes of each dependency and the expected workflow behavior.
+  </p>
+
+  <h4><code>docker compose up -d --wait</code></h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Behavior</th><th>Notes</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>All services healthy within timeout</td>
+        <td>Step exits 0; workflow passes</td>
+        <td>Normal operation</td>
+        <td><span class="tag happy">happy-path</span></td>
+      </tr>
+      <tr>
+        <td>A service fails healthcheck within timeout</td>
+        <td>Step exits non-zero; workflow fails</td>
+        <td><code>docker compose ps</code> still logged; <code>down</code> still runs</td>
+        <td><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td>Timeout exceeded before all healthy</td>
+        <td>Step exits non-zero; workflow fails</td>
+        <td><code>--wait-timeout</code> enforces the deadline</td>
+        <td><span class="tag error">error</span></td>
+      </tr>
+      <tr>
+        <td><code>docker compose up</code> itself errors (bad YAML, missing image)</td>
+        <td>Step exits non-zero; workflow fails</td>
+        <td>Logged to runner stdout</td>
+        <td><span class="tag error">error</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4><code>docker-compose.ci.yml</code> Triton stub</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Happy path</td>
+        <td><code>python:3.12-alpine</code> serving <code>{}</code> + 200 on port 8000</td>
+        <td>Responds to <code>/v2/health/ready</code></td>
+        <td><span class="tag happy">happy-path</span></td>
+      </tr>
+      <tr>
+        <td>Container fails to start</td>
+        <td>Workflow fails; <code>docker compose ps</code> shows container state</td>
+        <td>Diagnose via runner logs</td>
+        <td><span class="tag error">error</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="code-label">docker-compose.ci.yml — Triton stub service definition</p>
+  <div class="code-block">services:
+  triton:
+    image: python:3.12-alpine
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    command: &gt;
+      python3 -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler;
+      class H(BaseHTTPRequestHandler):
+        def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+        def log_message(self, *a): pass
+      HTTPServer(('', 8000), H).serve_forever()"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v2/health/ready')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s</div>
+
+  <div class="callout note">
+    <strong>Portfolio scope note:</strong> The real Triton image is excluded from CI due to its size (~15–20 GB) and GPU requirements. This is an intentional scope decision for a portfolio project. The gRPC channel in <code>TritonGrpcConfig.java</code> is lazy — no connection to port 8001 is made at startup, so the stub does not need to handle gRPC traffic.
+  </div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>api Dockerfile build fails (compile error)</td>
+        <td>Workflow fails at <code>docker compose up</code> step</td>
+        <td>Build errors surface before healthcheck</td>
+        <td>None — real Dockerfile used</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>qdrant container fails to start</td>
+        <td>Workflow fails; api never starts (<code>depends_on</code>)</td>
+        <td>Cascading failure is visible in <code>docker compose ps</code> output</td>
+        <td>None — real qdrant image used</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>api healthcheck fails (<code>/api/operator/health</code> non-200)</td>
+        <td>Workflow fails after timeout</td>
+        <td>App started but is unhealthy</td>
+        <td>None — real api build used</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>STARTUP_TIMEOUT</code> too low for api build time</td>
+        <td>Workflow fails with timeout</td>
+        <td>api build can take 60–90s on cold Maven cache; timeout must account for build + startup</td>
+        <td>Set <code>STARTUP_TIMEOUT</code> to at least 120 on first run</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>docker compose down</code> fails after a failed startup</td>
+        <td>Runner step still exits; no resource leak because runner is ephemeral</td>
+        <td><code>if: always()</code> ensures teardown runs</td>
+        <td>N/A — GitHub Actions runner is discarded after job</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>PR targets a branch other than <code>main</code> (e.g. feature → feature)</td>
+        <td>Workflow does not trigger</td>
+        <td>Correct by trigger configuration</td>
+        <td><code>pull_request: branches: [main]</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">
+    <strong>Timeout warning:</strong> The api service build can take 60–90 seconds on a cold Maven cache. Set <code>STARTUP_TIMEOUT</code> to at least <code>120</code> on the first run to avoid premature timeout failures.
+  </div>
+
+  <h3>Unit Test Checklist</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    This component is a CI workflow file — it is not unit-tested. Acceptance is verified by observing the workflow run in GitHub Actions.
+  </p>
+  <ul class="criteria-list">
+    <li>Workflow triggers on a PR targeting <code>main</code> (visible in Actions tab)</li>
+    <li>Workflow does NOT trigger on a PR targeting a non-<code>main</code> branch</li>
+    <li>All three services (triton stub, qdrant, api) reach healthy state: <code>docker compose ps</code> shows all running</li>
+    <li><code>docker compose ps</code> output is visible in the job log</li>
+    <li><code>docker compose down</code> runs even when a service fails (inject a failure and confirm teardown step runs)</li>
+    <li>Job appears as a required status check on a PR to <code>main</code> after branch protection is configured</li>
+    <li><code>STARTUP_TIMEOUT</code> env var is respected (default 120 visible in workflow YAML)</li>
+  </ul>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
