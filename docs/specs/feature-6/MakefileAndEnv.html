@@ -68,8 +68,8 @@
       </tr>
       <tr>
         <td>pipeline</td>
-        <td><code>pip install -r requirements.txt</code> then scripts 01–05 in order</td>
-        <td>Install Python dependencies and run all five pipeline steps end-to-end.</td>
+        <td><code>docker compose run --rm load-model</code>, then <code>docker compose up -d</code>, then <code>docker compose run --rm load-data</code></td>
+        <td>Orchestrate the two-phase data loading workflow: export the ONNX model, start all services, then load all movie data. Exits with a labelled error message if any phase fails.</td>
       </tr>
       <tr>
         <td>clean</td>
@@ -81,8 +81,7 @@
 
   <h3>Pipeline Target Detail</h3>
   <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
-    The <code>pipeline</code> target first installs Python dependencies from <code>requirements.txt</code>, then executes pipeline scripts
-    <code>01_fetch_tmdb.py</code> through <code>05_enrich_tmdb.py</code> in strict order. Each script produces output consumed by the next.
+    The <code>pipeline</code> target orchestrates a three-phase workflow: first it runs <code>docker compose run --rm load-model</code> to export the ONNX model, then <code>docker compose up -d</code> to start all services, then <code>docker compose run --rm load-data</code> to fetch and embed movie data into Qdrant. Each phase must succeed before the next begins; a failure exits with a labelled error message identifying which phase failed.
   </p>
 
   <h3>Clean Target Detail</h3>
@@ -105,14 +104,14 @@
       </tr>
       <tr>
         <td>PROJECT_ROOT</td>
-        <td>Absolute path to the repository root; used by pipeline scripts to resolve data and model directory paths.</td>
-        <td>Yes</td>
+        <td>Absolute path to the repo root — present in <code>.env.example</code> for historical reasons; not used by any pipeline script.</td>
+        <td>No</td>
       </tr>
     </tbody>
   </table>
 
   <p style="color:#8b949e;font-size:0.875rem;margin-top:8px;">
-    Copy <code>.env.example</code> to <code>.env</code> and populate both values before running <code>make pipeline</code>.
+    Copy <code>.env.example</code> to <code>.env</code> and set <code>TMDB_API_KEY</code> before running <code>make pipeline</code>.
     The <code>.env</code> file is gitignored to prevent accidental credential commits.
   </p>
 
