@@ -343,6 +343,220 @@ class TestStep5EnrichTmdb:
 
 
 # ---------------------------------------------------------------------------
+# load-model.sh integration tests
+# ---------------------------------------------------------------------------
+
+from pathlib import Path
+
+_PIPELINE_DIR = Path(__file__).parent.parent
+_LOAD_MODEL_SH = _PIPELINE_DIR / "load-model.sh"
+_LOAD_DATA_SH = _PIPELINE_DIR / "load-data.sh"
+_COMPOSE_FILE = _PIPELINE_DIR.parent / "docker-compose.yml"
+_ENV_EXAMPLE = _PIPELINE_DIR.parent / ".env.example"
+
+
+def _run_load_model(tmp_path, script01_exit=0, script02_exit=0):
+    (tmp_path / "01_download_corpus.py").write_text(f"import sys; sys.exit({script01_exit})")
+    (tmp_path / "02_export_model.py").write_text(f"import sys; sys.exit({script02_exit})")
+    return subprocess.run(
+        ["bash", str(_LOAD_MODEL_SH)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+
+
+class TestLoadModelSh:
+    def test_happy_path_exit_code_0(self, tmp_path):
+        result = _run_load_model(tmp_path)
+        assert result.returncode == 0
+
+    def test_happy_path_no_error_lines(self, tmp_path):
+        result = _run_load_model(tmp_path)
+        assert "ERROR" not in result.stdout + result.stderr
+
+    def test_script01_fails_exit_code_propagated(self, tmp_path):
+        result = _run_load_model(tmp_path, script01_exit=1)
+        assert result.returncode == 1
+
+    def test_script01_fails_separator_present(self, tmp_path):
+        result = _run_load_model(tmp_path, script01_exit=1)
+        assert "--- last output from 01_download_corpus.py ---" in result.stdout + result.stderr
+
+    def test_script01_fails_error_message_present(self, tmp_path):
+        result = _run_load_model(tmp_path, script01_exit=1)
+        assert "ERROR: 01_download_corpus.py failed with exit code 1" in result.stdout + result.stderr
+
+    def test_script01_fails_script02_not_invoked(self, tmp_path):
+        sentinel = tmp_path / "script02_ran"
+        (tmp_path / "01_download_corpus.py").write_text("import sys; sys.exit(1)")
+        (tmp_path / "02_export_model.py").write_text(
+            f"open('{sentinel}', 'w').close(); import sys; sys.exit(0)"
+        )
+        subprocess.run(["bash", str(_LOAD_MODEL_SH)], cwd=tmp_path, capture_output=True)
+        assert not sentinel.exists()
+
+    def test_script02_fails_exit_code_propagated(self, tmp_path):
+        result = _run_load_model(tmp_path, script01_exit=0, script02_exit=3)
+        assert result.returncode == 3
+
+    def test_script02_fails_error_message_present(self, tmp_path):
+        result = _run_load_model(tmp_path, script01_exit=0, script02_exit=3)
+        assert "ERROR: 02_export_model.py failed with exit code 3" in result.stdout + result.stderr
+
+
+# ---------------------------------------------------------------------------
+# load-data.sh integration tests
+# ---------------------------------------------------------------------------
+
+def _make_fake_curl(tmp_path, triton_ok=True, qdrant_ok=True):
+    triton_code = 0 if triton_ok else 1
+    qdrant_code = 0 if qdrant_ok else 1
+    script = tmp_path / "curl"
+    script.write_text(
+        f"""#!/usr/bin/env bash
+url="${{@: -1}}"
+if [[ "$url" == *"triton"* ]]; then exit {triton_code}; fi
+if [[ "$url" == *"qdrant"* ]]; then exit {qdrant_code}; fi
+exit 0
+"""
+    )
+    script.chmod(0o755)
+
+
+def _make_py_scripts(tmp_path, s03_exit=0, s04_exit=0, s05_exit=0):
+    (tmp_path / "03_embed_corpus.py").write_text(f"import sys; sys.exit({s03_exit})")
+    (tmp_path / "04_ingest_qdrant.py").write_text(f"import sys; sys.exit({s04_exit})")
+    (tmp_path / "05_enrich_tmdb.py").write_text(f"import sys; sys.exit({s05_exit})")
+
+
+def _run_load_data(tmp_path, tmdb_api_key=None, tmdb_empty=False,
+                   triton_ok=True, qdrant_ok=True, s03_exit=0, s04_exit=0, s05_exit=0):
+    _make_fake_curl(tmp_path, triton_ok, qdrant_ok)
+    _make_py_scripts(tmp_path, s03_exit, s04_exit, s05_exit)
+    env = {k: v for k, v in os.environ.items() if k != "TMDB_API_KEY"}
+    env["PATH"] = f"{tmp_path}:{os.environ.get('PATH', '/usr/bin:/bin')}"
+    if tmdb_api_key is not None:
+        env["TMDB_API_KEY"] = tmdb_api_key
+    elif tmdb_empty:
+        env["TMDB_API_KEY"] = ""
+    return subprocess.run(
+        ["bash", str(_LOAD_DATA_SH)],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
+class TestLoadDataSh:
+    def test_triton_unreachable_exit_1(self, tmp_path):
+        result = _run_load_data(tmp_path, triton_ok=False, qdrant_ok=True)
+        assert result.returncode == 1
+
+    def test_triton_unreachable_error_message(self, tmp_path):
+        result = _run_load_data(tmp_path, triton_ok=False, qdrant_ok=True)
+        assert "ERROR: the following services are not reachable: triton" in result.stdout + result.stderr
+
+    def test_both_unreachable_exit_1(self, tmp_path):
+        result = _run_load_data(tmp_path, triton_ok=False, qdrant_ok=False)
+        assert result.returncode == 1
+
+    def test_both_unreachable_error_message(self, tmp_path):
+        result = _run_load_data(tmp_path, triton_ok=False, qdrant_ok=False)
+        assert "ERROR: the following services are not reachable: triton, qdrant" in result.stdout + result.stderr
+
+    def test_tmdb_unset_exit_0(self, tmp_path):
+        result = _run_load_data(tmp_path)
+        assert result.returncode == 0
+
+    def test_tmdb_unset_warning_present(self, tmp_path):
+        result = _run_load_data(tmp_path)
+        assert "WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py" in result.stdout + result.stderr
+
+    def test_tmdb_unset_script05_not_invoked(self, tmp_path):
+        sentinel = tmp_path / "script05_ran"
+        _make_fake_curl(tmp_path, triton_ok=True, qdrant_ok=True)
+        (tmp_path / "03_embed_corpus.py").write_text("import sys; sys.exit(0)")
+        (tmp_path / "04_ingest_qdrant.py").write_text("import sys; sys.exit(0)")
+        (tmp_path / "05_enrich_tmdb.py").write_text(
+            f"open('{sentinel}', 'w').close(); import sys; sys.exit(0)"
+        )
+        env = {k: v for k, v in os.environ.items() if k != "TMDB_API_KEY"}
+        env["PATH"] = f"{tmp_path}:{os.environ.get('PATH', '/usr/bin:/bin')}"
+        subprocess.run(["bash", str(_LOAD_DATA_SH)], cwd=tmp_path, env=env, capture_output=True)
+        assert not sentinel.exists()
+
+    def test_tmdb_empty_warning_present(self, tmp_path):
+        result = _run_load_data(tmp_path, tmdb_empty=True)
+        assert "WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py" in result.stdout + result.stderr
+
+    def test_tmdb_empty_exit_0(self, tmp_path):
+        result = _run_load_data(tmp_path, tmdb_empty=True)
+        assert result.returncode == 0
+
+    def test_script03_fails_exit_code_propagated(self, tmp_path):
+        result = _run_load_data(tmp_path, tmdb_api_key="key", s03_exit=2)
+        assert result.returncode == 2
+
+    def test_script03_fails_error_message(self, tmp_path):
+        result = _run_load_data(tmp_path, tmdb_api_key="key", s03_exit=2)
+        assert "ERROR: 03_embed_corpus.py failed with exit code 2" in result.stdout + result.stderr
+
+    def test_script03_fails_scripts_04_05_not_invoked(self, tmp_path):
+        sentinel04 = tmp_path / "script04_ran"
+        sentinel05 = tmp_path / "script05_ran"
+        _make_fake_curl(tmp_path, triton_ok=True, qdrant_ok=True)
+        (tmp_path / "03_embed_corpus.py").write_text("import sys; sys.exit(2)")
+        (tmp_path / "04_ingest_qdrant.py").write_text(
+            f"open('{sentinel04}', 'w').close(); import sys; sys.exit(0)"
+        )
+        (tmp_path / "05_enrich_tmdb.py").write_text(
+            f"open('{sentinel05}', 'w').close(); import sys; sys.exit(0)"
+        )
+        env = {k: v for k, v in os.environ.items() if k != "TMDB_API_KEY"}
+        env["PATH"] = f"{tmp_path}:{os.environ.get('PATH', '/usr/bin:/bin')}"
+        env["TMDB_API_KEY"] = "key"
+        subprocess.run(["bash", str(_LOAD_DATA_SH)], cwd=tmp_path, env=env, capture_output=True)
+        assert not sentinel04.exists()
+        assert not sentinel05.exists()
+
+
+# ---------------------------------------------------------------------------
+# Compose service definition tests
+# ---------------------------------------------------------------------------
+
+class TestComposeServices:
+    @pytest.fixture(scope="class")
+    def compose_text(self):
+        return _COMPOSE_FILE.read_text()
+
+    def test_load_model_has_profile(self, compose_text):
+        assert "profiles: [load-model]" in compose_text or "- load-model" in compose_text
+
+    def test_load_data_has_profile(self, compose_text):
+        assert "profiles: [load-data]" in compose_text or "- load-data" in compose_text
+
+    def test_load_model_volume_data(self, compose_text):
+        assert "./data:/app/data" in compose_text
+
+    def test_load_model_volume_model_repository(self, compose_text):
+        assert "./model-repository:/app/model-repository" in compose_text
+
+    def test_load_data_depends_on_triton_healthy(self, compose_text):
+        assert "triton" in compose_text and "service_healthy" in compose_text
+
+    def test_load_data_depends_on_qdrant_healthy(self, compose_text):
+        assert "qdrant" in compose_text and "service_healthy" in compose_text
+
+    def test_load_data_env_file(self, compose_text):
+        assert "env_file: .env" in compose_text
+
+    def test_env_example_no_project_root(self):
+        assert "PROJECT_ROOT" not in _ENV_EXAMPLE.read_text()
+
+
+# ---------------------------------------------------------------------------
 # Docker image smoke tests (integration-test label)
 # ---------------------------------------------------------------------------
 
