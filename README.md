@@ -211,19 +211,14 @@ movie-semantic-search/
 ## Quick Start (for future reference)
 
 ```bash
-# 1. Start infrastructure (Triton + Qdrant)
-docker compose up triton qdrant -d
+# 1. Export the ONNX model (Phase 1 — run once before starting services)
+docker compose run --rm load-model
 
-# 2. Run offline pipeline (one time)
-cd pipeline
-pip install -r requirements.txt
-python 01_download_corpus.py
-python 02_export_model.py
-python 03_embed_corpus.py
-python 04_ingest_qdrant.py
+# 2. Start infrastructure (Triton + Qdrant + API)
+docker compose up -d
 
-# 3. Start the API
-docker compose up api -d
+# 3. Load the movie data (Phase 2 — run once after services are healthy)
+docker compose run --rm load-data
 
 # 4. Open the UI
 open http://localhost:8080
@@ -232,7 +227,7 @@ open http://localhost:8080
 Or with Make:
 
 ```bash
-make pipeline   # run all pipeline steps
+make pipeline   # export model, start services, load data
 make up         # start all services
 make down       # stop all services
 ```
