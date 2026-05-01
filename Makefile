@@ -7,12 +7,12 @@ down:
 	docker compose down
 
 pipeline:
-	cd pipeline && pip install -r requirements.txt && \
-	python 01_download_corpus.py && \
-	python 02_export_model.py && \
-	python 03_embed_corpus.py && \
-	python 04_ingest_qdrant.py && \
-	python 05_enrich_tmdb.py
+	docker compose run --rm load-model \
+	  || (echo "[pipeline] load-model phase failed — aborting" && exit 1)
+	docker compose up -d \
+	  || (echo "[pipeline] services-up phase failed — aborting" && exit 1)
+	docker compose run --rm load-data \
+	  || (echo "[pipeline] load-data phase failed — aborting" && exit 1)
 
 clean:
 	rm -rf data/raw/ data/embeddings/ \
