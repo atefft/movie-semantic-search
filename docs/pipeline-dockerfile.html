@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — PipelineDockerfile Spec</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.95rem; font-weight: 600; margin: 20px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .feature-badge { display: inline-flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: #8b949e; margin-bottom: 20px; }
+  .feature-badge .num { color: #58a6ff; font-weight: 600; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; line-height: 1.5; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table td:nth-child(2) { color: #f2cc60; font-family: "SFMono-Regular", Consolas, monospace; }
+  .prop-table tr:hover td { background: #161b22; }
+  .tag { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 0.75rem; font-weight: 600; }
+  .tag.happy { background: #1a4731; color: #56d364; border: 1px solid #238636; }
+  .tag.error { background: #3d1a1a; color: #f85149; border: 1px solid #da3633; }
+  .tag.warn { background: #3d2f1a; color: #f0a83d; border: 1px solid #9e6a03; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; }
+  .code-block .label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; border-bottom: 1px solid #30363d; padding-bottom: 4px; }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .code-block .st { color: #a5d6ff; }
+  .code-block .val { color: #79c0ff; }
+  .callout { border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 0.875rem; line-height: 1.6; }
+  .callout.note { background: #1a2d4a; border-left: 3px solid #58a6ff; }
+  .callout.warning { background: #3d2f1a; border-left: 3px solid #f0a83d; }
+  .callout.critical { background: #3d1a1a; border-left: 3px solid #f85149; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .callout.note strong { color: #58a6ff; }
+  .callout.warning strong { color: #f0a83d; }
+  .callout.critical strong { color: #f85149; }
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li { padding: 5px 0; font-size: 0.875rem; color: #c9d1d9; display: flex; gap: 10px; line-height: 1.5; }
+  .checklist li::before { content: "☐"; color: #388bfd; flex-shrink: 0; font-size: 1rem; }
+  .nav-links { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #30363d; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / PipelineDockerfile</span>
+</header>
+
+<main>
+  <h2>PipelineDockerfile</h2>
+  <div class="feature-badge"><span class="num">#111</span> Create pipeline/Dockerfile for containerized script execution</div>
+  <p class="subtitle">
+    <code>pipeline/Dockerfile</code> — shared base image for all pipeline Compose services
+  </p>
+
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-bottom:24px;">
+    Builds a <code>python:3.11-slim</code>-based image. Installs <code>libgomp1</code> unconditionally
+    via <code>apt-get</code> (required by <code>torch</code> CPU wheels on slim images), then installs
+    all Python dependencies from <code>pipeline/requirements.txt</code>, and copies the five pipeline
+    scripts into <code>/app</code>. Sets <code>WORKDIR /app</code> so that <code>data/</code> and
+    <code>model-repository/</code> can be bind-mounted by Compose services. No <code>ENTRYPOINT</code>
+    or <code>CMD</code> is defined — each Compose service specifies its own <code>command</code>.
+  </p>
+
+  <div class="callout note">
+    <strong>Build context — no <code>cd</code> required</strong>
+    Run <code>docker build pipeline/</code> from the repo root — the argument is the build context path,
+    not a directory to enter. In Compose, use <code>build: { context: pipeline }</code> and Compose
+    resolves it automatically from the repo root. The only thing to avoid is
+    <code>docker build -f pipeline/Dockerfile .</code>, which passes the repo root as context and
+    fails at <code>COPY requirements.txt .</code>.
+  </div>
+
+  <h3>Dockerfile</h3>
+  <div class="code-block">
+    <div class="label">pipeline/Dockerfile</div>
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+
+<span class="cm"># libgomp1 required by torch CPU wheels on slim images</span>
+<span class="kw">RUN</span> apt-get update \
+    &amp;&amp; apt-get install -y --no-install-recommends libgomp1 \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+<span class="cm"># Install Python deps; requirements copied first for layer-cache efficiency</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install <span class="st">--no-cache-dir</span> -r requirements.txt
+
+<span class="cm"># Copy pipeline scripts; tests are excluded</span>
+<span class="kw">COPY</span> *.py .
+</div>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Base image</td><td>string</td>
+        <td>Docker base image</td>
+        <td><code>python:3.11-slim</code> — fixed, not a build arg</td>
+      </tr>
+      <tr>
+        <td>System packages</td><td>apt</td>
+        <td>OS-level libraries</td>
+        <td><code>libgomp1</code> — installed unconditionally via <code>apt-get</code> before pip; required by <code>torch</code> CPU wheels; apt lists cleaned after install</td>
+      </tr>
+      <tr>
+        <td>WORKDIR</td><td>path</td>
+        <td>Container working directory</td>
+        <td><code>/app</code> — all relative paths in scripts (<code>data/raw</code>, <code>model-repository/…</code>) resolve under this dir</td>
+      </tr>
+      <tr>
+        <td>requirements.txt</td><td>file</td>
+        <td>Python dependency manifest</td>
+        <td>Copied first for layer-cache efficiency; <code>pip install --no-cache-dir -r requirements.txt</code></td>
+      </tr>
+      <tr>
+        <td>Pipeline scripts</td><td>files</td>
+        <td>01–05 <code>.py</code> files from <code>pipeline/</code></td>
+        <td>All five scripts COPYed into <code>/app</code>; test files are not included</td>
+      </tr>
+      <tr>
+        <td>ENTRYPOINT</td><td>—</td>
+        <td>Container entrypoint</td>
+        <td>Not set — command provided entirely at Compose service level</td>
+      </tr>
+      <tr>
+        <td>CMD</td><td>—</td>
+        <td>Default command</td>
+        <td>Not set — command provided entirely at Compose service level</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>python:3.11-slim</td><td>Docker base image</td><td><code>FROM</code> instruction</td></tr>
+      <tr><td>libgomp1</td><td>Debian apt package</td><td><code>RUN apt-get install -y --no-install-recommends libgomp1</code></td></tr>
+      <tr><td>pipeline/requirements.txt</td><td>Text file listing pip packages</td><td><code>COPY</code> + <code>RUN pip install</code></td></tr>
+      <tr><td>Pipeline scripts 01–05</td><td>Python source files</td><td><code>COPY *.py .</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>python:3.11-slim</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> Image available</td>
+        <td>Pull succeeds</td>
+        <td>Normal build operation</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Registry unreachable</td>
+        <td><code>docker build</code> fails with pull error</td>
+        <td>No mitigation — operator must have network access</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>pip install (requirements.txt)</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> All packages resolve</td>
+        <td>Exit 0, layer cached</td>
+        <td>Normal operation</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Package not found</td>
+        <td><code>pip install</code> non-zero exit</td>
+        <td>Build fails with clear pip error message</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Version conflict</td>
+        <td><code>pip install</code> non-zero exit</td>
+        <td>Build fails with pip resolver error</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+    <div class="label">Successful build output (abridged)</div>
+{
+  "step": "RUN pip install --no-cache-dir -r requirements.txt",
+  "exit_code": 0,
+  "packages_installed": [
+    "transformers==4.39.3", "torch>=2.0.0", "onnxruntime==1.17.3",
+    "tritonclient[grpc]", "tqdm", "qdrant-client", "requests"
+  ]
+}
+  </div>
+
+  <div class="code-block" style="margin-top:8px;">
+    <div class="label">Failed build output</div>
+{
+  "step": "RUN pip install --no-cache-dir -r requirements.txt",
+  "exit_code": 1,
+  "error": "ERROR: No matching distribution found for &lt;package&gt;"
+}
+  </div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>docker build -f pipeline/Dockerfile .</code> (repo root as context)</td>
+        <td>Build fails at <code>COPY requirements.txt .</code></td>
+        <td>Wrong build context — <code>requirements.txt</code> not found at repo root. Normal usage is <code>docker build pipeline/</code> from repo root or Compose <code>build: { context: pipeline }</code> — no <code>cd</code> required.</td>
+        <td>Run with <code>.</code> as context deliberately to confirm the failure</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>docker run &lt;image&gt;</code> with no command</td>
+        <td>Container exits immediately</td>
+        <td>No CMD/ENTRYPOINT is by design — Compose must supply command</td>
+        <td>N/A — by design</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Compose mounts <code>./data:/app/data</code>, <code>./model-repository:/app/model-repository</code></td>
+        <td>Scripts resolve <code>pathlib.Path("data/raw")</code> to <code>/app/data/raw</code></td>
+        <td>WORKDIR <code>/app</code> makes all relative script paths correct</td>
+        <td>Standard Compose volume bind-mount</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>python -c "import torch"</code> inside built image</td>
+        <td>Exits 0, no <code>ImportError</code></td>
+        <td><code>libgomp1</code> is pre-installed unconditionally — no runtime library surprise</td>
+        <td><code>docker run --rm pipeline-test python -c "import torch"</code> exits 0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout note">
+    <strong>libgomp1 is a required system dependency</strong>
+    <code>python:3.11-slim</code> strips <code>libgomp1</code> (OpenMP runtime), which <code>torch</code>
+    CPU wheels need at import time. The Dockerfile installs it unconditionally before
+    <code>pip install</code> so the image is fully self-contained and predictable.
+  </div>
+
+  <h3>Unit Test Checklist</h3>
+  <p style="color:#8b949e;font-size:0.85rem;margin-bottom:8px;">
+    Dockerfile "unit tests" are build and smoke checks run with <code>docker build</code> and <code>docker run</code>:
+  </p>
+  <ul class="checklist">
+    <li><code>docker build -t pipeline-test pipeline/</code> exits 0 (build succeeds)</li>
+    <li><code>docker run --rm pipeline-test python -c "import transformers, torch, onnxruntime, tritonclient.grpc, tqdm, qdrant_client, requests"</code> exits 0 (all deps importable)</li>
+    <li><code>docker run --rm pipeline-test ls 01_download_corpus.py 02_export_model.py 03_embed_corpus.py 04_ingest_qdrant.py 05_enrich_tmdb.py</code> exits 0 (all five scripts present in <code>/app</code>)</li>
+    <li><code>docker inspect pipeline-test --format '{{.Config.WorkingDir}}'</code> returns <code>/app</code></li>
+    <li><code>docker inspect pipeline-test --format '{{.Config.Entrypoint}}'</code> returns <code>[]</code> (no entrypoint set)</li>
+    <li><code>docker inspect pipeline-test --format '{{.Config.Cmd}}'</code> returns <code>[]</code> (no default command set)</li>
+    <li>Edge case #1: <code>docker build -f pipeline/Dockerfile .</code> from repo root fails with COPY error (confirming build context must be <code>pipeline/</code>)</li>
+  </ul>
+
+  <div class="nav-links">
+    <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+    <span style="color:#8b949e;font-size:0.85rem;">Feature #111 — 1 of 1 component</span>
+  </div>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
