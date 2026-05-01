@@ -10,13 +10,18 @@ services:
       - "8000:8000"
       - "8001:8001"
       - "8002:8002"
-    command: >
-      python3 -c "
-      from http.server import HTTPServer, BaseHTTPRequestHandler;
-      class H(BaseHTTPRequestHandler):
-        def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
-        def log_message(self, *a): pass
-      HTTPServer(('', 8000), H).serve_forever()"
+    command:
+      - python3
+      - -c
+      - |
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        class H(BaseHTTPRequestHandler):
+          def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{}')
+          def log_message(self, *a): pass
+        HTTPServer(('', 8000), H).serve_forever()
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v2/health/ready')"]
       interval: 5s
