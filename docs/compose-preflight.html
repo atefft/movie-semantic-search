@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — ComposePreflight</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 20px 0 6px; color: #79c0ff; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .tag.warn  { background: #2d1f0e; color: #e3b341; border: 1px solid #d29922; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .callout { border-radius: 6px; padding: 12px 16px; font-size: 0.875rem; margin: 16px 0; line-height: 1.6; }
+  .callout.note { background: #161b22; border: 1px solid #30363d; color: #8b949e; }
+  .callout.warning { background: #2d1f0e; border: 1px solid #d29922; color: #e3b341; }
+  .callout.critical { background: #3d1f1f; border: 1px solid #da3633; color: #f85149; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  .nav-links { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; border-top: 1px solid #30363d; padding-top: 24px; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #158 / ComposePreflight</span>
+</header>
+
+<main>
+  <h2>ComposePreflight</h2>
+  <span class="badge">#158 — Pre-flight Docker Compose startup check in integration test suite</span>
+  <p class="subtitle">Spec for <code>compose_preflight</code> (<code>pipeline/tests/compose_preflight.py</code>) — runs <code>docker compose up -d</code> and polls until all services reach running state.</p>
+
+  <h3>Overview</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    <code>compose_preflight</code> is a standalone module that implements the pre-flight Docker Compose startup check.
+    It exposes a single entry point, <code>preflight_check(timeout, project_dir)</code>, that runs
+    <code>docker compose up -d</code> and then polls <code>docker compose ps</code> until the
+    <code>triton</code>, <code>qdrant</code>, and <code>api</code> service containers all report a
+    <code>running</code> state, or the timeout expires. On any failure it raises <code>PreflightError</code>
+    with a human-readable message that includes the failing service names or compose exit code and output.
+    The module has no pytest dependency and is independently testable by mocking <code>subprocess.run</code>.
+  </p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>timeout</td>
+        <td><code>int</code></td>
+        <td>Maximum seconds to wait for all services to reach running state</td>
+        <td>Must be &gt; 0; default 60 is applied by the caller (conftest fixture), not here</td>
+      </tr>
+      <tr>
+        <td>project_dir</td>
+        <td><code>pathlib.Path</code> or <code>str</code></td>
+        <td>Absolute path to the directory containing <code>docker-compose.yml</code></td>
+        <td>Passed as <code>cwd</code> to every <code>subprocess.run</code> call; must exist</td>
+      </tr>
+      <tr>
+        <td>PreflightError.message</td>
+        <td><code>str</code></td>
+        <td>Human-readable failure reason</td>
+        <td>Includes exit code + compose output on <code>up -d</code> failure; lists non-running service names on timeout</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>subprocess.run</td>
+        <td>stdlib</td>
+        <td>Module-level import; mocked in tests</td>
+      </tr>
+      <tr>
+        <td>time.sleep</td>
+        <td>stdlib</td>
+        <td>Module-level import; mocked in tests</td>
+      </tr>
+      <tr>
+        <td>time.monotonic</td>
+        <td>stdlib</td>
+        <td>Module-level import; mocked in tests</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependency Mock Behaviors</h3>
+
+  <h4>subprocess.run — docker compose up -d</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> Happy path</td>
+        <td>Returns <code>CompletedProcess(returncode=0, stdout="", stderr="")</code></td>
+        <td>Compose starts successfully</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Non-zero exit</td>
+        <td>Returns <code>CompletedProcess(returncode=1, stdout="some output", stderr="error detail")</code></td>
+        <td>Compose failed to start</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="color:#8b949e;font-size:0.85rem;margin-top:12px;">Mock data structures:</p>
+  <div class="code-block"><span class="cm">// Happy path</span>
+{"returncode": 0, "stdout": "", "stderr": ""}
+
+<span class="cm">// Failure</span>
+{"returncode": 1, "stdout": "Creating network...\n", "stderr": "Error response from daemon: port is already allocated"}</div>
+
+  <h4>subprocess.run — docker compose ps --format json</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> All running</td>
+        <td>Returns JSON list where all three services have <code>"State": "running"</code></td>
+        <td>Poll succeeds immediately</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">warn</span> Partially running</td>
+        <td>Returns JSON list where &ge;1 service has <code>"State": "starting"</code> or <code>"exited"</code></td>
+        <td>Poller must retry</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Timeout — still not running</td>
+        <td>Partial list returned on every call until <code>time.monotonic()</code> exceeds deadline</td>
+        <td>Raises <code>PreflightError</code> listing non-running services</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">warn</span> Empty output</td>
+        <td>Returns <code>CompletedProcess(returncode=0, stdout="[]", stderr="")</code></td>
+        <td>Treated as zero services running; poller retries</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> docker compose ps fails</td>
+        <td>Returns <code>CompletedProcess(returncode=1, stdout="", stderr="no such service")</code></td>
+        <td>Raises <code>PreflightError</code> with the stderr message</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="color:#8b949e;font-size:0.85rem;margin-top:12px;">Mock data structures:</p>
+  <div class="code-block"><span class="cm">// All running</span>
+[
+  {"Name": "movie-semantic-search-triton-1", "Service": "triton", "State": "running"},
+  {"Name": "movie-semantic-search-qdrant-1", "Service": "qdrant", "State": "running"},
+  {"Name": "movie-semantic-search-api-1",    "Service": "api",    "State": "running"}
+]
+
+<span class="cm">// Partially running (api still starting)</span>
+[
+  {"Name": "movie-semantic-search-triton-1", "Service": "triton", "State": "running"},
+  {"Name": "movie-semantic-search-qdrant-1", "Service": "qdrant", "State": "running"},
+  {"Name": "movie-semantic-search-api-1",    "Service": "api",    "State": "starting"}
+]
+
+<span class="cm">// Empty</span>
+[]</div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>docker compose up -d</code> exits 1</td>
+        <td><code>PreflightError("docker compose up -d failed (exit 1):\n&lt;stdout+stderr&gt;")</code></td>
+        <td>Compose itself fails to start</td>
+        <td><code>subprocess.run</code> returns <code>returncode=1</code> on first call</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>All services running on first poll</td>
+        <td>Returns normally (no exception)</td>
+        <td>Happy path completes in one poll cycle</td>
+        <td><code>up -d</code> → 0; <code>ps</code> → all running</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Services reach running on second poll</td>
+        <td>Returns normally</td>
+        <td>Realistic slow-start scenario</td>
+        <td>First <code>ps</code> returns partial; second returns all running</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Timeout expires with qdrant not running</td>
+        <td><code>PreflightError("timed out after 60s; services not running: qdrant")</code></td>
+        <td>One service never starts</td>
+        <td><code>ps</code> always returns qdrant as <code>"starting"</code> until deadline</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Timeout expires with triton and api not running</td>
+        <td><code>PreflightError("timed out after 60s; services not running: triton, api")</code></td>
+        <td>Multiple services fail</td>
+        <td><code>ps</code> always returns triton and api as non-running</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>docker compose ps</code> returns empty list</td>
+        <td>Treated as no services running; poller retries</td>
+        <td>Compose project not yet visible</td>
+        <td><code>ps</code> returns <code>[]</code> once, then all-running</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>docker compose ps</code> exits non-zero</td>
+        <td><code>PreflightError("docker compose ps failed: &lt;stderr&gt;")</code></td>
+        <td>ps command itself errors</td>
+        <td><code>subprocess.run</code> returns <code>returncode=1</code> on ps call</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>project_dir</code> does not contain <code>docker-compose.yml</code></td>
+        <td><code>PreflightError</code> propagated from compose exit 1</td>
+        <td>Wrong directory</td>
+        <td>compose returns non-zero</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <ul class="criteria-list">
+    <li>Happy path: <code>preflight_check(60, project_dir)</code> completes without raising when <code>up -d</code> exits 0 and all services report <code>running</code> on first poll</li>
+    <li><code>up -d</code> non-zero exit: raises <code>PreflightError</code> containing the exit code and combined stdout+stderr; <code>ps</code> is never called</li>
+    <li>Partial running then all running: completes normally after two poll cycles; <code>time.sleep</code> called at least once</li>
+    <li>Timeout — one service stuck: raises <code>PreflightError</code> whose message contains <code>"timed out"</code> and the non-running service name</li>
+    <li>Timeout — multiple services stuck: <code>PreflightError</code> message lists all non-running service names</li>
+    <li>Empty <code>ps</code> output then all running: completes normally (empty treated as not-yet-running, not as an error)</li>
+    <li><code>ps</code> non-zero exit: raises <code>PreflightError</code> containing the stderr from the ps command</li>
+    <li><code>time.sleep</code> is called between poll attempts (not a busy-wait loop)</li>
+  </ul>
+
+  <div class="nav-links">
+    <span style="color:#8b949e;font-size:0.85rem;">Feature #158 — Component 1 of 2</span>
+    <a href="compose-preflight-fixture.html" style="color:#58a6ff;text-decoration:none;font-size:0.85rem;">Next: ComposePreflightFixture →</a>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
