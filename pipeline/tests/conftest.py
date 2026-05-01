@@ -6,12 +6,15 @@ qdrant_client) so tests can import pipeline scripts without those deps.
 """
 
 import importlib.util
+import os
 import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+
+from pipeline.tests.compose_preflight import preflight_check, PreflightError
 
 
 def _install_stubs():
@@ -119,3 +122,21 @@ def pipeline_loader():
         return module
 
     return _load
+
+
+@pytest.fixture(scope="session", autouse=True)
+def compose_preflight_fixture():
+    if not os.environ.get("COMPOSE_PREFLIGHT"):
+        return
+
+    raw_timeout = os.environ.get("COMPOSE_STARTUP_TIMEOUT", "60") or "60"
+    try:
+        timeout = int(raw_timeout)
+    except ValueError:
+        pytest.fail(f"COMPOSE_STARTUP_TIMEOUT must be an integer, got: {raw_timeout}")
+
+    project_dir = Path(__file__).parent.parent.parent
+    try:
+        preflight_check(timeout, project_dir)
+    except PreflightError as e:
+        pytest.fail(str(e))
