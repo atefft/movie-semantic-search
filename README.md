@@ -227,7 +227,6 @@ open http://localhost:8080
 Or with Make:
 
 ```bash
-make pipeline   # export model, start services, load data
 make up         # start all services
 make down       # stop all services
 ```
