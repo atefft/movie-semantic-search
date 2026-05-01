@@ -1,0 +1,25 @@
+# CI override: replaces the real Triton image with a lightweight HTTP stub.
+# The real nvcr.io/nvidia/tritonserver image is ~15-20 GB and requires a GPU,
+# making it impractical for standard GitHub Actions runners. The gRPC channel
+# in TritonGrpcConfig.java is lazy — no connection to port 8001 is made at
+# startup — so the stub only needs to handle the HTTP healthcheck on port 8000.
+services:
+  triton:
+    image: python:3.12-alpine
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    command: >
+      python3 -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler;
+      class H(BaseHTTPRequestHandler):
+        def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+        def log_message(self, *a): pass
+      HTTPServer(('', 8000), H).serve_forever()"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v2/health/ready')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
