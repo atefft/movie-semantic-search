@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — TwoPhaseWorkflowDocumentation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; color: #e6edf3; margin: 20px 0 6px; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.del { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .tag.add { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .callout { border-radius: 6px; padding: 12px 16px; font-size: 0.875rem; margin: 16px 0; line-height: 1.6; }
+  .callout.note { background: #161b22; border: 1px solid #30363d; color: #8b949e; }
+  .callout.warning { background: #2d1f0e; border: 1px solid #d29922; color: #e3b341; }
+  .callout.critical { background: #3d1f1f; border: 1px solid #da3633; color: #f85149; }
+  .file-section { border: 1px solid #30363d; border-radius: 8px; margin-top: 24px; overflow: hidden; }
+  .file-section-header { background: #161b22; padding: 10px 16px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #79c0ff; border-bottom: 1px solid #30363d; }
+  .file-section-body { padding: 16px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  .nav-links { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; border-top: 1px solid #30363d; padding-top: 24px; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #113 / TwoPhaseWorkflowDocumentation</span>
+</header>
+
+<main>
+  <h2>TwoPhaseWorkflowDocumentation</h2>
+  <span class="badge">#113 — Update documentation for the two-phase pipeline workflow</span>
+  <p class="subtitle">Spec for documentation updates across 7 files — replacing all references to the old single-phase pipeline command with the new three-step workflow.</p>
+
+  <h3>Overview</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    All user-facing and developer-facing documentation must reflect the two-phase pipeline execution model:
+    <strong>Phase 1</strong> (<code>load-model</code>) runs before services start and exports the ONNX model;
+    <strong>Phase 2</strong> (<code>load-data</code>) runs after services are healthy and loads all movie data.
+    Every existing reference to <code>docker compose run --rm pipeline</code> and <code>make pipeline</code>
+    (as a one-shot runner) must be replaced with the correct three-step sequence.
+  </p>
+
+  <div class="callout critical">
+    The old documentation had a sequencing bug: Triton was started before the ONNX model was exported,
+    causing Triton to fail to load the model. The new workflow fixes this by running
+    <code>load-model</code> before <code>docker compose up -d</code>.
+  </div>
+
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:16px;">The authoritative three-step sequence that must appear in all updated documentation:</p>
+  <div class="code-block"><span class="cm"># Step 1 — export model (before services start)</span>
+docker compose run --rm load-model
+
+<span class="cm"># Step 2 — start services</span>
+docker compose up -d
+
+<span class="cm"># Step 3 — load data (after services are healthy)</span>
+docker compose run --rm load-data</div>
+
+  <h3>Files and Required Changes</h3>
+
+  <div class="file-section">
+    <div class="file-section-header">README.md</div>
+    <div class="file-section-body">
+      <h4>Quick Start section</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">Replace the current quick start block with the three-step sequence. The old block starts Triton before exporting the model — a sequencing bug.</p>
+      <div class="code-block"><span class="cm"># 1. Export the ONNX model (Phase 1 — run once before starting services)</span>
+docker compose run --rm load-model
+
+<span class="cm"># 2. Start infrastructure (Triton + Qdrant + API)</span>
+docker compose up -d
+
+<span class="cm"># 3. Load the movie data (Phase 2 — run once after services are healthy)</span>
+docker compose run --rm load-data
+
+<span class="cm"># 4. Open the UI</span>
+open http://localhost:8080</div>
+
+      <h4 style="margin-top:16px;">Make section comment</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">Update the <code>make pipeline</code> comment to describe the new orchestration:</p>
+      <table class="prop-table" style="margin-top:8px;">
+        <thead><tr><th>Command</th><th>Old description</th><th>New description</th></tr></thead>
+        <tbody>
+          <tr><td>make pipeline</td><td>run all pipeline steps</td><td>export model, start services, load data</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">docs/arch/pipeline.md</div>
+    <div class="file-section-body">
+      <h4>Opening description (line 3)</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">Replace the first paragraph with a two-phase description:</p>
+      <div class="code-block">Five Python scripts that build the search index, executed in two phases.
+Scripts 01–02 (<code>load-model</code> phase) run before services start and
+export the ONNX model to the Triton model repository. Scripts 03–05
+(<code>load-data</code> phase) run after services are healthy and require
+Triton and Qdrant to be reachable.</div>
+      <h4 style="margin-top:16px;">Any embedded quick start</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;">Replace any occurrences of <code>docker compose run --rm pipeline</code> or <code>make pipeline</code> (as pipeline runner) with the three-step sequence.</p>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">docs/executive-guide.html</div>
+    <div class="file-section-body">
+      <h4>Getting Started section — renumber to 5 steps</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">The current 3-step list (start services, load data, open UI) must become 5 steps. The original step 1 "start services" conflates model export with service startup; split it:</p>
+      <table class="prop-table">
+        <thead><tr><th>#</th><th>Step title</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Export the embedding model</td><td>Run <code>docker compose run --rm load-model</code>. Must complete before services start.</td></tr>
+          <tr><td>2</td><td>Start the services</td><td>Run <code>docker compose up -d</code>. All components start together.</td></tr>
+          <tr><td>3</td><td>Load the movie data</td><td>Run <code>docker compose run --rm load-data</code>. Only needs to run once after initial setup.</td></tr>
+          <tr><td>4</td><td>Open the Search Interface</td><td>Use the Search Interface link in Operator Tools. (Previously step 3.)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout note" style="margin-top:12px;">The original step 1 ("Start the services. Launch the system…") combined model export and service startup. The new steps 1–3 separate these concerns in the correct order.</div>
+
+      <h4 style="margin-top:16px;">Walkthrough Prerequisites — expand to 7 steps</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">The current prerequisites run <code>docker compose up -d</code> as step 4 and <code>docker compose run --rm pipeline</code> as step 5. Replace steps 4–5 with three steps:</p>
+      <table class="prop-table">
+        <thead><tr><th>#</th><th>Step</th><th>Command / Action</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Get a TMDB API key</td><td>(unchanged)</td></tr>
+          <tr><td>2</td><td>Configure your environment file</td><td>(unchanged)</td></tr>
+          <tr><td>3</td><td>Install Docker Desktop</td><td>(unchanged)</td></tr>
+          <tr><td>4</td><td>Export the embedding model</td><td><code>docker compose run --rm load-model</code></td></tr>
+          <tr><td>5</td><td>Start all services</td><td><code>docker compose up -d</code> — wait ~30 seconds</td></tr>
+          <tr><td>6</td><td>Load the movie data</td><td><code>docker compose run --rm load-data</code> — may take several minutes</td></tr>
+          <tr><td>7</td><td>Confirm the system is ready</td><td>Open <code>http://localhost:6333/dashboard</code> (previously step 6)</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:16px;">Troubleshooting remediation blocks</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;">All five walkthrough step failure blocks contain <code>docker compose run --rm pipeline</code> as the recovery command. Replace each with <code>docker compose run --rm load-data</code>.</p>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">docs/specs/feature-88/WalkthroughSection.html</div>
+    <div class="file-section-body">
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">Four occurrences of <code>docker compose run --rm pipeline</code> must be updated:</p>
+      <table class="prop-table">
+        <thead><tr><th>Location</th><th><span class="tag del">Old</span></th><th><span class="tag add">New</span></th></tr></thead>
+        <tbody>
+          <tr><td>Prerequisites step 5 (load movie data)</td><td><code>docker compose run --rm pipeline</code></td><td><code>docker compose run --rm load-data</code></td></tr>
+          <tr><td>Remediation — Step 1 (Qdrant empty)</td><td><code>docker compose run --rm pipeline</code></td><td><code>docker compose run --rm load-data</code></td></tr>
+          <tr><td>Remediation — Step 2 (vectors missing)</td><td><code>docker compose run --rm pipeline</code></td><td><code>docker compose run --rm load-data</code></td></tr>
+          <tr><td>Remediation — Step 5 (irrelevant results)</td><td><code>docker compose run --rm pipeline</code></td><td><code>docker compose run --rm load-data</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">docs/specs/feature-6/TritonModelRepository.html</div>
+    <div class="file-section-body">
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;"><strong>Model Directory Layout section</strong> — the paragraph ending "Run <code>make pipeline</code>… to produce it before starting Triton" must be updated:</p>
+      <table class="prop-table">
+        <thead><tr><th><span class="tag del">Old</span></th><th><span class="tag add">New</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Run <code>make pipeline</code> (or <code>python pipeline/02_export_onnx.py</code> directly) to produce it before starting Triton.</td>
+            <td>Run <code>docker compose run --rm load-model</code> to produce it before starting the services. Alternatively, run <code>python pipeline/02_export_model.py</code> directly.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">docs/specs/feature-6/MakefileAndEnv.html</div>
+    <div class="file-section-body">
+      <h4>Makefile Targets table — pipeline row</h4>
+      <table class="prop-table">
+        <thead><tr><th>Field</th><th><span class="tag del">Old</span></th><th><span class="tag add">New</span></th></tr></thead>
+        <tbody>
+          <tr><td>Command(s)</td><td><code>pip install -r requirements.txt</code> then scripts 01–05 in order</td><td><code>docker compose run --rm load-model</code>, then <code>docker compose up -d</code>, then <code>docker compose run --rm load-data</code></td></tr>
+          <tr><td>Description</td><td>Install Python dependencies and run all five pipeline steps end-to-end.</td><td>Orchestrate the two-phase data loading workflow: export the ONNX model, start all services, then load all movie data. Exits with a labelled error message if any phase fails.</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:16px;">Pipeline Target Detail paragraph</h4>
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;">Replace the paragraph describing <code>01_fetch_tmdb.py</code> through <code>05_enrich_tmdb.py</code> with a description of the three-phase orchestration: runs <code>load-model</code>, then <code>docker compose up -d</code>, then <code>load-data</code>, aborting with a labelled error if any phase exits non-zero.</p>
+
+      <h4 style="margin-top:16px;">Environment Variables table — PROJECT_ROOT row</h4>
+      <table class="prop-table">
+        <thead><tr><th>Field</th><th><span class="tag del">Old</span></th><th><span class="tag add">New</span></th></tr></thead>
+        <tbody>
+          <tr><td>Description</td><td>Absolute path to the repository root; used by pipeline scripts to resolve data and model directory paths.</td><td>Absolute path to the repo root — present in <code>.env.example</code> for historical reasons; not used by any pipeline script.</td></tr>
+          <tr><td>Required</td><td>Yes</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <div class="file-section-header">.env.example</div>
+    <div class="file-section-body">
+      <p style="color:#8b949e;font-size:0.875rem;line-height:1.6;margin-bottom:8px;">Remove the <code>PROJECT_ROOT</code> variable and its comment line. The file should retain only the header comment and the <code>TMDB_API_KEY</code> variable:</p>
+      <div class="code-block"># Copy this file to .env and fill in your values before running `make pipeline`
+
+# TMDB v3 API key — required by pipeline/05_enrich_tmdb.py for poster URL enrichment
+TMDB_API_KEY=your_tmdb_api_key_here</div>
+      <div class="callout note" style="margin-top:12px;"><code>PROJECT_ROOT</code> is not referenced by any pipeline script. Removing it prevents operators from spending time populating a variable that has no effect.</div>
+    </div>
+  </div>
+
+  <h3>Acceptance Criteria</h3>
+  <ul class="criteria-list">
+    <li><code>README.md</code> quick start shows <code>load-model</code> → <code>docker compose up -d</code> → <code>load-data</code> in that order</li>
+    <li><code>README.md</code> Make section comment accurately describes the new orchestration behaviour</li>
+    <li><code>docs/arch/pipeline.md</code> opening description reflects the two-phase execution model</li>
+    <li><code>docs/arch/pipeline.md</code> contains no references to <code>docker compose run --rm pipeline</code> or <code>make pipeline</code> as a pipeline runner</li>
+    <li><code>docs/executive-guide.html</code> Getting Started section has 4 or 5 steps with model export before <code>docker compose up -d</code></li>
+    <li><code>docs/executive-guide.html</code> walkthrough prerequisites include <code>load-model</code> before <code>docker compose up -d</code> before <code>load-data</code></li>
+    <li><code>docs/executive-guide.html</code> troubleshooting remediation commands use <code>load-data</code> not <code>pipeline</code></li>
+    <li><code>docs/specs/feature-88/WalkthroughSection.html</code> has zero occurrences of <code>docker compose run --rm pipeline</code></li>
+    <li><code>docs/specs/feature-6/TritonModelRepository.html</code> references <code>docker compose run --rm load-model</code> instead of <code>make pipeline</code></li>
+    <li><code>docs/specs/feature-6/MakefileAndEnv.html</code> pipeline target row describes the three-phase orchestration</li>
+    <li><code>docs/specs/feature-6/MakefileAndEnv.html</code> <code>PROJECT_ROOT</code> row shows Required: No and description says it is unused by pipeline scripts</li>
+    <li><code>.env.example</code> does not contain <code>PROJECT_ROOT</code></li>
+  </ul>
+
+  <div class="nav-links">
+    <a href="MakefilePipelineTarget.html" style="color:#58a6ff;text-decoration:none;font-size:0.85rem;">← Previous: MakefilePipelineTarget</a>
+    <span style="color:#8b949e;font-size:0.85rem;">Feature #113 — Component 2 of 2</span>
+  </div>
+
+  <a class="back-link" href="../../index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
