@@ -13,8 +13,8 @@ fi
 run_script() {
   local name="$1"; shift
   echo "Running ${name}..."
-  python3 "$name" "$@"
-  local code=$?
+  local code=0
+  python3 "$name" "$@" || code=$?
   if [ "$code" -ne 0 ]; then
     echo "ERROR: ${name} failed with exit code ${code}"
     exit "$code"
