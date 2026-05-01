@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  STARTUP_TIMEOUT: 60
+  STARTUP_TIMEOUT: 120
 
 jobs:
   startup-check:

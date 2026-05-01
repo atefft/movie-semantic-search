@@ -68,7 +68,7 @@
         <td><code>STARTUP_TIMEOUT</code></td>
         <td>integer (seconds)</td>
         <td>Max seconds to wait for all services to become healthy</td>
-        <td>Workflow-level env var, default <code>60</code>. Passed to <code>--wait-timeout</code>.</td>
+        <td>Workflow-level env var, default <code>120</code>. Passed to <code>--wait-timeout</code>.</td>
       </tr>
       <tr>
         <td>Workflow trigger</td>
@@ -265,7 +265,7 @@
     <li><code>docker compose ps</code> output is visible in the job log</li>
     <li><code>docker compose down</code> runs even when a service fails (inject a failure and confirm teardown step runs)</li>
     <li>Job appears as a required status check on a PR to <code>main</code> after branch protection is configured</li>
-    <li><code>STARTUP_TIMEOUT</code> env var is respected (default 60 visible in workflow YAML)</li>
+    <li><code>STARTUP_TIMEOUT</code> env var is respected (default 120 visible in workflow YAML)</li>
   </ul>
 
   <a class="back-link" href="index.html">← Back to Architecture Overview</a>

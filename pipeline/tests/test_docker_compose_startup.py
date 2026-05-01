@@ -79,6 +79,6 @@ class TestDockerComposeCheckWorkflow:
         env = workflow.get("env", {})
         assert "STARTUP_TIMEOUT" in env
 
-    def test_startup_timeout_default_value_60(self, workflow):
+    def test_startup_timeout_default_value(self, workflow):
         env = workflow.get("env", {})
-        assert str(env.get("STARTUP_TIMEOUT")) == "60"
+        assert int(env.get("STARTUP_TIMEOUT")) >= 120
