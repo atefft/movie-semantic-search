@@ -45,5 +45,25 @@ services:
       retries: 12
       start_period: 30s
 
+  load-model:
+    profiles: [load-model]
+    build: ./pipeline
+    volumes:
+      - ./data:/app/data
+      - ./model-repository:/app/model-repository
+
+  load-data:
+    profiles: [load-data]
+    build: ./pipeline
+    volumes:
+      - ./data:/app/data
+    env_file: .env
+    command: ["/app/load-data.sh"]
+    depends_on:
+      triton:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+
 volumes:
   qdrant_data: {}
