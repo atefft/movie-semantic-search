@@ -1,6 +1,6 @@
 # Pipeline Component
 
-Five Python scripts that build the search index. Run once before starting the serving stack. All scripts are idempotent.
+Five Python scripts that build the search index, executed in two phases. Scripts 01–02 (`load-model` phase) run before services start and export the ONNX model to the Triton model repository. Scripts 03–05 (`load-data` phase) run after services are healthy and require Triton and Qdrant to be reachable.
 
 ```mermaid
 sequenceDiagram
