@@ -3,6 +3,7 @@
 import io
 import json
 import os
+import subprocess
 import sys
 import tarfile
 from unittest.mock import MagicMock, patch
@@ -339,3 +340,75 @@ class TestStep5EnrichTmdb:
              patch("time.sleep"):
             mod_05.main()
             mod_05.main()
+
+
+# ---------------------------------------------------------------------------
+# Docker image smoke tests (integration-test label)
+# ---------------------------------------------------------------------------
+
+IMAGE = "pipeline-integration-test"
+
+
+def setup_module(module):
+    result = subprocess.run(
+        ["docker", "build", "-t", IMAGE, "pipeline/"],
+        capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def teardown_module(module):
+    subprocess.run(["docker", "rmi", "-f", IMAGE], capture_output=True)
+
+
+def test_all_deps_importable():
+    result = subprocess.run(
+        ["docker", "run", "--rm", IMAGE,
+         "python", "-c",
+         "import transformers, torch, onnxruntime, tritonclient.grpc, tqdm, qdrant_client, requests"],
+        capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_scripts_present():
+    scripts = ["01_download_corpus.py", "02_export_model.py", "03_embed_corpus.py",
+               "04_ingest_qdrant.py", "05_enrich_tmdb.py"]
+    result = subprocess.run(
+        ["docker", "run", "--rm", IMAGE, "ls"] + scripts,
+        capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_workdir():
+    result = subprocess.run(
+        ["docker", "inspect", IMAGE, "--format", "{{.Config.WorkingDir}}"],
+        capture_output=True, text=True
+    )
+    assert result.stdout.strip() == "/app"
+
+
+def test_no_entrypoint():
+    result = subprocess.run(
+        ["docker", "inspect", IMAGE, "--format", "{{.Config.Entrypoint}}"],
+        capture_output=True, text=True
+    )
+    assert result.stdout.strip() == "[]"
+
+
+def test_no_cmd():
+    result = subprocess.run(
+        ["docker", "inspect", IMAGE, "--format", "{{.Config.Cmd}}"],
+        capture_output=True, text=True
+    )
+    assert result.stdout.strip() == "[]"
+
+
+def test_wrong_context_fails():
+    result = subprocess.run(
+        ["docker", "build", "-f", "pipeline/Dockerfile", "."],
+        capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "COPY" in result.stderr or "not found" in result.stderr.lower()
