@@ -170,6 +170,8 @@ movie-semantic-search/
 │
 ├── pipeline/
 │   ├── requirements.txt
+│   ├── load-model.sh               # Entrypoint: export model to ONNX (Docker Compose service)
+│   ├── load-data.sh                # Entrypoint: embed corpus and ingest into Qdrant (Docker Compose service)
 │   ├── 01_download_corpus.py       # Fetch and extract CMU dataset
 │   ├── 02_export_model.py          # Export all-MiniLM-L6-v2 to ONNX
 │   ├── 03_embed_corpus.py          # Batch-embed all plot summaries via Triton
