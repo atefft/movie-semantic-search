@@ -65,9 +65,10 @@
     <section id="getting-started">
       <h2>Getting Started</h2>
       <ol>
-        <li><strong>Start the services.</strong> Launch the system using Docker Desktop. All components — the database, the search service, and the web interface — start together with a single command from someone on the technical team.</li>
-        <li><strong>Load the movie data.</strong> Once the services are running, use the Pipeline Runner tool listed in the Operator Tools section below to load all movie information into the system. This only needs to be done once after the initial setup.</li>
-        <li><strong>Open the Search Interface.</strong> Use the Search Interface link in the Operator Tools section below to open the movie search page in your browser. From there, type any description and browse the results.</li>
+        <li><strong>Export the embedding model.</strong> From the repository root, run <code>docker compose run --rm load-model</code>. This exports the ONNX model into the Triton model repository and must complete before the services start.</li>
+        <li><strong>Start the services.</strong> Launch the system using Docker Desktop by running <code>docker compose up -d</code>. All components — the database, the search service, and the web interface — start together.</li>
+        <li><strong>Load the movie data.</strong> From the repository root, run <code>docker compose run --rm load-data</code> to load all movie information into the system. This only needs to be done once after the initial setup.</li>
+        <li><strong>Open the Search Interface.</strong> Use the Search Interface link in the Operator Tools section below to open the movie search page in your browser.</li>
       </ol>
     </section>
 
@@ -124,12 +125,16 @@
           <strong>Install Docker Desktop.</strong> Download and install Docker Desktop from <a href="https://www.docker.com/products/docker-desktop/">https://www.docker.com/products/docker-desktop/</a>. Ensure Docker Desktop is running before continuing.
         </li>
         <li>
+          <strong>Export the embedding model.</strong> From the repository root, run the following command. This must complete before starting the services:
+          <pre class="code-block">docker compose run --rm load-model</pre>
+        </li>
+        <li>
           <strong>Start all services.</strong> From the repository root, run the following command and wait approximately 30 seconds for all containers to become healthy:
           <pre class="code-block">docker compose up -d</pre>
         </li>
         <li>
-          <strong>Load the movie data.</strong> From the repository root, run the data pipeline to load all movie records into the search database. This may take several minutes:
-          <pre class="code-block">docker compose run --rm pipeline</pre>
+          <strong>Load the movie data.</strong> From the repository root, run the following command. This may take several minutes:
+          <pre class="code-block">docker compose run --rm load-data</pre>
         </li>
         <li>
           <strong>Confirm the system is ready.</strong> Open <a href="http://localhost:6333/dashboard">http://localhost:6333/dashboard</a> in your browser. If you see the Qdrant Dashboard without errors, all services are running and you are ready to begin the walkthrough. If you see a connection error, wait 30 seconds and refresh.
@@ -146,12 +151,12 @@
           The movies collection shows a non-zero record count (typically several thousand records), confirming that the data pipeline loaded movie data into the vector database.
           <div class="failure">
             <span class="step-label">If this doesn't work:</span>
-            The record count shows 0 or the collection does not exist. From the repository root, re-run the pipeline:
-            <pre class="code-block">docker compose run --rm pipeline</pre>
-            If the collection still shows 0 records after the pipeline completes, file a bug using <code>/create-feature-request</code>:
-            <pre class="code-block">Title: Qdrant movies collection empty after pipeline run
+            The record count shows 0 or the collection does not exist. From the repository root, re-run the data loader:
+            <pre class="code-block">docker compose run --rm load-data</pre>
+            If the collection still shows 0 records after the loader completes, file a bug using <code>/create-feature-request</code>:
+            <pre class="code-block">Title: Qdrant movies collection empty after load-data run
 Steps to reproduce:
-  1. Run `docker compose run --rm pipeline` from the repository root
+  1. Run `docker compose run --rm load-data` from the repository root
   2. Open http://localhost:6333/dashboard and click "movies"
 Expected: Points count &gt; 0
 Actual: Points count = 0</pre>
@@ -165,12 +170,12 @@ Actual: Points count = 0</pre>
           Each record contains a populated embedding — a long array of floating-point numbers — confirming that text embedding was applied to each movie description during ingestion.
           <div class="failure">
             <span class="step-label">If this doesn't work:</span>
-            The vector field is null, empty, or absent. From the repository root, re-run the pipeline to regenerate embeddings:
-            <pre class="code-block">docker compose run --rm pipeline</pre>
-            If vectors remain missing after the pipeline completes, file a bug using <code>/create-feature-request</code>:
+            The vector field is null, empty, or absent. From the repository root, re-run the data loader to regenerate embeddings:
+            <pre class="code-block">docker compose run --rm load-data</pre>
+            If vectors remain missing after the loader completes, file a bug using <code>/create-feature-request</code>:
             <pre class="code-block">Title: Qdrant movie records missing vector embeddings
 Steps to reproduce:
-  1. Run `docker compose run --rm pipeline` from the repository root
+  1. Run `docker compose run --rm load-data` from the repository root
   2. Open a record in http://localhost:6333/dashboard
 Expected: Vector field populated with float array
 Actual: Vector field is null or absent</pre>
@@ -226,9 +231,9 @@ Actual: [observed response code and body]</pre>
           The top results are recognizable science fiction or space-themed films (for example: Star Wars, Interstellar, Gravity, The Martian, or 2001: A Space Odyssey), confirming that semantic similarity search is surfacing movies by meaning rather than exact keyword matching.
           <div class="failure">
             <span class="step-label">If this doesn't work:</span>
-            The results consist mostly of unrelated films (comedies, dramas, or documentaries unrelated to space). From the repository root, verify that the vector embeddings were generated correctly by re-running the pipeline:
-            <pre class="code-block">docker compose run --rm pipeline</pre>
-            If results remain irrelevant after re-running the pipeline, file a bug using <code>/create-feature-request</code>:
+            The results consist mostly of unrelated films (comedies, dramas, or documentaries unrelated to space). From the repository root, verify that the vector embeddings were generated correctly by re-running the data loader:
+            <pre class="code-block">docker compose run --rm load-data</pre>
+            If results remain irrelevant after re-running the data loader, file a bug using <code>/create-feature-request</code>:
             <pre class="code-block">Title: Search results for "sci-fi space adventure" are not relevant
 Steps to reproduce:
   1. Follow steps 1-4 of the End-to-End Test Walkthrough from the repository root
