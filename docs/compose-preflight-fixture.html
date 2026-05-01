@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — ComposePreflightFixture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 20px 0 6px; color: #79c0ff; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre; }
+  .code-block .cm { color: #8b949e; font-style: italic; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .tag.warn  { background: #2d1f0e; color: #e3b341; border: 1px solid #d29922; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .callout { border-radius: 6px; padding: 12px 16px; font-size: 0.875rem; margin: 16px 0; line-height: 1.6; }
+  .callout.note { background: #161b22; border: 1px solid #30363d; color: #8b949e; }
+  .callout.warning { background: #2d1f0e; border: 1px solid #d29922; color: #e3b341; }
+  .callout.critical { background: #3d1f1f; border: 1px solid #da3633; color: #f85149; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  .nav-links { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; border-top: 1px solid #30363d; padding-top: 24px; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #158 / ComposePreflightFixture</span>
+</header>
+
+<main>
+  <h2>ComposePreflightFixture</h2>
+  <span class="badge">#158 — Pre-flight Docker Compose startup check in integration test suite</span>
+  <p class="subtitle">Spec for <code>compose_preflight_fixture</code> (<code>pipeline/tests/conftest.py</code>) — session-scoped autouse fixture that gates the test suite on Docker Compose readiness.</p>
+
+  <h3>Overview</h3>
+  <p style="color:#8b949e;font-size:0.9rem;line-height:1.6;margin-top:8px;">
+    <code>compose_preflight_fixture</code> is a session-scoped autouse pytest fixture added to
+    <code>pipeline/tests/conftest.py</code>. It reads the <code>COMPOSE_PREFLIGHT</code> environment variable;
+    if unset or empty, it returns immediately (opt-in design — default off, so parallel
+    <code>/execute-task</code> agent runs are unaffected). When <code>COMPOSE_PREFLIGHT</code> is set to any
+    non-empty value, the fixture reads <code>COMPOSE_STARTUP_TIMEOUT</code> (default <code>"60"</code>),
+    resolves the repo root as <code>Path(__file__).parent.parent.parent</code>, and calls
+    <code>preflight_check(timeout, project_dir)</code> from <code>compose_preflight</code>. If
+    <code>PreflightError</code> is raised, the fixture calls <code>pytest.fail(str(e))</code>, which aborts
+    the entire session before any test case runs.
+  </p>
+
+  <div class="callout note">
+    The fixture is default-off by design. Setting <code>COMPOSE_PREFLIGHT=1</code> opts the test run in to
+    the pre-flight check. This ensures that unit-test-only runs in CI do not attempt to contact Docker.
+  </div>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>COMPOSE_PREFLIGHT</td>
+        <td>env var (<code>str</code>)</td>
+        <td>Opt-in gate</td>
+        <td>If absent or empty string, fixture returns without action</td>
+      </tr>
+      <tr>
+        <td>COMPOSE_STARTUP_TIMEOUT</td>
+        <td>env var (<code>str</code>)</td>
+        <td>Timeout in seconds</td>
+        <td>Parsed as <code>int</code>; defaults to <code>60</code> if absent or empty; raises <code>pytest.fail</code> if non-integer</td>
+      </tr>
+      <tr>
+        <td>project_dir</td>
+        <td><code>pathlib.Path</code></td>
+        <td>Repo root (contains <code>docker-compose.yml</code>)</td>
+        <td>Computed as <code>Path(__file__).parent.parent.parent</code> — three levels up from <code>conftest.py</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>compose_preflight.preflight_check</td>
+        <td><code>(timeout: int, project_dir: Path) -&gt; None</code></td>
+        <td>Module-level import</td>
+      </tr>
+      <tr>
+        <td>compose_preflight.PreflightError</td>
+        <td>Exception class</td>
+        <td>Module-level import</td>
+      </tr>
+      <tr>
+        <td>os.environ</td>
+        <td>stdlib</td>
+        <td>Module-level import</td>
+      </tr>
+      <tr>
+        <td>pytest.fail</td>
+        <td>pytest stdlib</td>
+        <td>Module-level import</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependency Mock Behaviors</h3>
+
+  <h4>compose_preflight.preflight_check</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> Happy path</td>
+        <td>Does nothing (returns <code>None</code>)</td>
+        <td>All services running; fixture completes without error</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> Pre-flight failure</td>
+        <td>Raises <code>PreflightError("timed out after 60s; services not running: api")</code></td>
+        <td>Fixture must call <code>pytest.fail</code> with that message</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>os.environ (via monkeypatch.setenv / monkeypatch.delenv)</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag warn">warn</span> COMPOSE_PREFLIGHT unset</td>
+        <td><code>monkeypatch.delenv("COMPOSE_PREFLIGHT", raising=False)</code></td>
+        <td>Fixture must return without calling <code>preflight_check</code></td>
+      </tr>
+      <tr>
+        <td><span class="tag happy">happy</span> COMPOSE_PREFLIGHT set to "1"</td>
+        <td><code>monkeypatch.setenv("COMPOSE_PREFLIGHT", "1")</code></td>
+        <td>Fixture must call <code>preflight_check</code></td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">warn</span> COMPOSE_STARTUP_TIMEOUT unset</td>
+        <td><code>monkeypatch.delenv("COMPOSE_STARTUP_TIMEOUT", raising=False)</code></td>
+        <td><code>timeout=60</code> must be passed to <code>preflight_check</code></td>
+      </tr>
+      <tr>
+        <td><span class="tag happy">happy</span> COMPOSE_STARTUP_TIMEOUT set to "30"</td>
+        <td><code>monkeypatch.setenv("COMPOSE_STARTUP_TIMEOUT", "30")</code></td>
+        <td><code>timeout=30</code> must be passed to <code>preflight_check</code></td>
+      </tr>
+      <tr>
+        <td><span class="tag error">error</span> COMPOSE_STARTUP_TIMEOUT set to "abc"</td>
+        <td><code>monkeypatch.setenv("COMPOSE_STARTUP_TIMEOUT", "abc")</code></td>
+        <td>Fixture calls <code>pytest.fail</code> with a message indicating invalid timeout value</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="color:#8b949e;font-size:0.85rem;margin-top:12px;">Mock data structures:</p>
+  <div class="code-block"><span class="cm"># Happy path env</span>
+{"COMPOSE_PREFLIGHT": "1", "COMPOSE_STARTUP_TIMEOUT": "60"}
+
+<span class="cm"># Disabled (default)</span>
+{}  <span class="cm"># neither env var set</span></div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>COMPOSE_PREFLIGHT</code> unset</td>
+        <td>Fixture returns; <code>preflight_check</code> not called</td>
+        <td>Default-off behavior; no docker interaction</td>
+        <td><code>delenv("COMPOSE_PREFLIGHT")</code></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>COMPOSE_PREFLIGHT=""</code> (empty string)</td>
+        <td>Fixture returns; <code>preflight_check</code> not called</td>
+        <td>Empty string treated as unset</td>
+        <td><code>setenv("COMPOSE_PREFLIGHT", "")</code></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>COMPOSE_PREFLIGHT="1"</code>, preflight succeeds</td>
+        <td>Fixture returns normally; no <code>pytest.fail</code></td>
+        <td>Happy path</td>
+        <td><code>preflight_check</code> returns <code>None</code></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>COMPOSE_PREFLIGHT="1"</code>, <code>PreflightError</code> raised</td>
+        <td><code>pytest.fail(error_message)</code> called with exact error message</td>
+        <td>Pre-flight failure aborts session</td>
+        <td><code>preflight_check</code> raises <code>PreflightError("...")</code></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>COMPOSE_STARTUP_TIMEOUT</code> unset</td>
+        <td><code>preflight_check</code> called with <code>timeout=60</code></td>
+        <td>Default timeout applied</td>
+        <td><code>delenv("COMPOSE_STARTUP_TIMEOUT")</code></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>COMPOSE_STARTUP_TIMEOUT="30"</code></td>
+        <td><code>preflight_check</code> called with <code>timeout=30</code></td>
+        <td>Custom timeout respected</td>
+        <td><code>setenv("COMPOSE_STARTUP_TIMEOUT", "30")</code></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>COMPOSE_STARTUP_TIMEOUT="abc"</code></td>
+        <td><code>pytest.fail("COMPOSE_STARTUP_TIMEOUT must be an integer, got: abc")</code></td>
+        <td>Non-integer value caught early</td>
+        <td><code>setenv("COMPOSE_STARTUP_TIMEOUT", "abc")</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <ul class="criteria-list">
+    <li><code>COMPOSE_PREFLIGHT</code> unset: <code>preflight_check</code> is never called</li>
+    <li><code>COMPOSE_PREFLIGHT=""</code>: <code>preflight_check</code> is never called</li>
+    <li><code>COMPOSE_PREFLIGHT="1"</code>, preflight succeeds: fixture completes; <code>pytest.fail</code> not called</li>
+    <li><code>COMPOSE_PREFLIGHT="1"</code>, <code>PreflightError</code> raised: <code>pytest.fail</code> called with the exact <code>PreflightError</code> message</li>
+    <li><code>COMPOSE_STARTUP_TIMEOUT</code> unset: <code>preflight_check</code> called with <code>timeout=60</code></li>
+    <li><code>COMPOSE_STARTUP_TIMEOUT="30"</code>: <code>preflight_check</code> called with <code>timeout=30</code></li>
+    <li><code>COMPOSE_STARTUP_TIMEOUT="abc"</code>: <code>pytest.fail</code> called with a message containing <code>"COMPOSE_STARTUP_TIMEOUT"</code> and <code>"abc"</code></li>
+  </ul>
+
+  <div class="nav-links">
+    <a href="compose-preflight.html" style="color:#58a6ff;text-decoration:none;font-size:0.85rem;">← Prev: ComposePreflight</a>
+    <span style="color:#8b949e;font-size:0.85rem;">Feature #158 — Component 2 of 2</span>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
