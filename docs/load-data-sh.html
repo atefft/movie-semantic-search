@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — load-data.sh</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 16px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; word-break: break-all; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p.prose { color: #8b949e; font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / load-data.sh</span>
+</header>
+
+<main>
+  <h2>load-data.sh</h2>
+  <span class="badge">#112 — Add load-model and load-data services to docker-compose.yml</span>
+  <p class="subtitle">Container entrypoint for the <code>load-data</code> compose service. Probes Triton and Qdrant health before running pipeline scripts 03–05 in sequence. Skips script 05 with a warning if <code>TMDB_API_KEY</code> is unset.</p>
+
+  <h3>Overview</h3>
+  <p class="prose">
+    <code>load-data.sh</code> is the container entrypoint for the <code>load-data</code> compose service. Before running any scripts, it probes Triton (<code>http://triton:8000/v2/health/ready</code>) and Qdrant (<code>http://qdrant:6333/healthz</code>) with <code>curl -sf</code>. If either probe fails, it prints one error message listing all unreachable services and exits 1. If both are reachable it runs scripts 03 (<code>03_embed_corpus.py</code>), 04 (<code>04_ingest_qdrant.py</code>), and 05 (<code>05_enrich_tmdb.py</code>) in sequence. Script 05 is skipped with a warning if <code>TMDB_API_KEY</code> is unset or empty. If any script exits non-zero, the entrypoint prints which script failed and its exit code, then stops immediately.
+  </p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>TMDB_API_KEY</td>
+        <td>env var, string</td>
+        <td>TMDB v3 API key for poster enrichment</td>
+        <td>If unset or empty, script 05 is skipped with a warning; not an error</td>
+      </tr>
+      <tr>
+        <td>Exit code</td>
+        <td>integer</td>
+        <td>Exit code of the entrypoint</td>
+        <td>0 on full success (or TMDB skip); 1 if services unreachable; N (failing script's code) if a script fails</td>
+      </tr>
+      <tr>
+        <td>stdout/stderr</td>
+        <td>string</td>
+        <td>Progress, warnings, and error messages</td>
+        <td>See message formats below</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Message Formats</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Event</th><th>Message</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Triton unreachable (alone)</td>
+        <td><code>"ERROR: the following services are not reachable: triton"</code></td>
+      </tr>
+      <tr>
+        <td>Qdrant unreachable (alone)</td>
+        <td><code>"ERROR: the following services are not reachable: qdrant"</code></td>
+      </tr>
+      <tr>
+        <td>Both unreachable</td>
+        <td><code>"ERROR: the following services are not reachable: triton, qdrant"</code></td>
+      </tr>
+      <tr>
+        <td>TMDB_API_KEY unset/empty</td>
+        <td><code>"WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py"</code></td>
+      </tr>
+      <tr>
+        <td>Script N fails</td>
+        <td><code>"ERROR: 03_embed_corpus.py failed with exit code N"</code> (etc.)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Observable Output Examples</h4>
+  <div class="code-block">WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py</div>
+  <div class="code-block" style="margin-top:12px;">ERROR: the following services are not reachable: triton, qdrant</div>
+  <div class="code-block" style="margin-top:12px;">ERROR: 03_embed_corpus.py failed with exit code 1</div>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Triton health endpoint</td>
+        <td><code>GET http://triton:8000/v2/health/ready</code> → HTTP 200</td>
+        <td>Probed via <code>curl -sf</code></td>
+      </tr>
+      <tr>
+        <td>Qdrant health endpoint</td>
+        <td><code>GET http://qdrant:6333/healthz</code> → HTTP 200</td>
+        <td>Probed via <code>curl -sf</code></td>
+      </tr>
+      <tr>
+        <td>03_embed_corpus.py</td>
+        <td>Python script at <code>/app/03_embed_corpus.py</code></td>
+        <td>Invoked as <code>python3 03_embed_corpus.py --triton-host triton --triton-port 8001</code></td>
+      </tr>
+      <tr>
+        <td>04_ingest_qdrant.py</td>
+        <td>Python script at <code>/app/04_ingest_qdrant.py</code></td>
+        <td>Invoked as <code>python3 04_ingest_qdrant.py --qdrant-url http://qdrant:6333</code></td>
+      </tr>
+      <tr>
+        <td>05_enrich_tmdb.py</td>
+        <td>Python script at <code>/app/05_enrich_tmdb.py</code></td>
+        <td>Invoked as <code>python3 05_enrich_tmdb.py --qdrant-url http://qdrant:6333</code> (only when <code>TMDB_API_KEY</code> is set)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Triton Health Endpoint — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Reachable</td><td><code>curl -sf</code> exits 0</td><td>Normal operation</td></tr>
+      <tr><td>Unreachable</td><td><code>curl -sf</code> exits non-zero</td><td>Network down or service not started</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Qdrant Health Endpoint — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Reachable</td><td><code>curl -sf</code> exits 0</td><td>Normal operation</td></tr>
+      <tr><td>Unreachable</td><td><code>curl -sf</code> exits non-zero</td><td>Network down or service not started</td></tr>
+    </tbody>
+  </table>
+
+  <h4>03_embed_corpus.py — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Happy path</td><td>Script exits 0</td><td>Embeddings written to data/embeddings/</td></tr>
+      <tr><td>Script fails</td><td>Script exits N</td><td>Entrypoint prints error and exits N; scripts 04 and 05 are not run</td></tr>
+    </tbody>
+  </table>
+
+  <h4>04_ingest_qdrant.py — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Happy path</td><td>Script exits 0</td><td>Points ingested into Qdrant</td></tr>
+      <tr><td>Script fails</td><td>Script exits N</td><td>Entrypoint prints error and exits N; script 05 is not run</td></tr>
+    </tbody>
+  </table>
+
+  <h4>05_enrich_tmdb.py — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Happy path (key set)</td><td><code>TMDB_API_KEY=abc123</code>, script exits 0</td><td>Poster URLs enriched</td></tr>
+      <tr><td>Skipped (key unset)</td><td><code>TMDB_API_KEY</code> not set</td><td>Warning printed; entrypoint exits 0 after scripts 03 and 04</td></tr>
+      <tr><td>Skipped (key empty)</td><td><code>TMDB_API_KEY=""</code></td><td>Same as unset — warning printed, script skipped</td></tr>
+      <tr><td>Script fails</td><td><code>TMDB_API_KEY=abc123</code>, script exits N</td><td>Entrypoint prints error and exits N</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Both services reachable, all scripts succeed, TMDB key set</td>
+        <td>Exit code 0; no error or warning lines in stdout</td>
+        <td>Full success</td>
+        <td>All probes and scripts succeed</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Triton unreachable, Qdrant reachable</td>
+        <td>Exit code 1; stdout contains exactly <code>"ERROR: the following services are not reachable: triton"</code>; no scripts run</td>
+        <td>Partial unreachability</td>
+        <td>Triton probe fails</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Both unreachable</td>
+        <td>Exit code 1; stdout contains exactly <code>"ERROR: the following services are not reachable: triton, qdrant"</code>; no scripts run</td>
+        <td>Both services down</td>
+        <td>Both probes fail</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Services reachable, <code>TMDB_API_KEY</code> unset</td>
+        <td>Exit code 0; stdout contains <code>"WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py"</code>; scripts 03 and 04 run; script 05 not invoked</td>
+        <td>TMDB key missing</td>
+        <td><code>TMDB_API_KEY</code> not in environment</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Services reachable, <code>TMDB_API_KEY=""</code></td>
+        <td>Exit code 0; stdout contains <code>"WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py"</code>; script 05 not invoked</td>
+        <td>Empty string treated identically to unset</td>
+        <td><code>TMDB_API_KEY</code> set to empty string</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Script 03 fails with exit code 2</td>
+        <td>Exit code 2; stdout contains <code>"ERROR: 03_embed_corpus.py failed with exit code 2"</code>; scripts 04 and 05 not invoked</td>
+        <td>Fail fast</td>
+        <td>Script 03 exits 2</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Scripts 03 and 04 succeed, script 05 fails with exit code 1 (key set)</td>
+        <td>Exit code 1; stdout contains <code>"ERROR: 05_enrich_tmdb.py failed with exit code 1"</code></td>
+        <td>Last script failure</td>
+        <td>Scripts 03 and 04 succeed; 05 exits 1</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <p class="prose">Shell scripts have no Python unit tests. All behavior is verified by the integration test task. The observable contract above defines what integration tests must assert:</p>
+  <ul class="criteria-list" style="margin-top:12px;">
+    <li>Happy path (key set): exit code 0; no error or warning lines in stdout</li>
+    <li>Triton unreachable alone: exit code 1; stdout contains exactly <code>"ERROR: the following services are not reachable: triton"</code>; no scripts run</li>
+    <li>Qdrant unreachable alone: exit code 1; stdout contains exactly <code>"ERROR: the following services are not reachable: qdrant"</code>; no scripts run</li>
+    <li>Both unreachable: exit code 1; stdout contains exactly <code>"ERROR: the following services are not reachable: triton, qdrant"</code>; no scripts run</li>
+    <li><code>TMDB_API_KEY</code> unset: exit code 0; stdout contains <code>"WARNING: TMDB_API_KEY is not set — skipping 05_enrich_tmdb.py"</code>; script 05 not invoked</li>
+    <li><code>TMDB_API_KEY</code> empty string: identical output to unset</li>
+    <li>Script 03 fails with exit code 2: exit code 2; stdout contains <code>"ERROR: 03_embed_corpus.py failed with exit code 2"</code>; scripts 04 and 05 not invoked</li>
+    <li>Script 05 fails with exit code 1 (key set): exit code 1; stdout contains <code>"ERROR: 05_enrich_tmdb.py failed with exit code 1"</code></li>
+    <li>Script 03 invoked with <code>--triton-host triton --triton-port 8001</code></li>
+    <li>Scripts 04 and 05 invoked with <code>--qdrant-url http://qdrant:6333</code></li>
+  </ul>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>

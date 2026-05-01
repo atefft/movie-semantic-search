@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — DockerComposeServices</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 16px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; word-break: break-all; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .callout { background: #161b22; border: 1px solid #30363d; border-left: 4px solid #388bfd; border-radius: 6px; padding: 14px 18px; margin-top: 14px; font-size: 0.875rem; color: #c9d1d9; line-height: 1.6; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p.prose { color: #8b949e; font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / DockerComposeServices</span>
+</header>
+
+<main>
+  <h2>DockerComposeServices</h2>
+  <span class="badge">#112 — Add load-model and load-data services to docker-compose.yml</span>
+  <p class="subtitle">Two new one-shot compose services — <code>load-model</code> and <code>load-data</code> — gated behind profiles so they never auto-start. <code>load-model</code> exports the ONNX model; <code>load-data</code> embeds, ingests, and optionally enriches all movie data.</p>
+
+  <h3>Overview</h3>
+  <p class="prose">
+    Two new one-shot services — <code>load-model</code> and <code>load-data</code> — are added to <code>docker-compose.yml</code>. Both are gated behind Compose profiles so they never start automatically on <code>docker compose up -d</code>. <code>load-model</code> runs pipeline scripts 01–02 with no service dependencies, binding <code>data/</code> and <code>model-repository/</code> so outputs persist on the host. <code>load-data</code> depends on <code>triton</code> and <code>qdrant</code> being healthy, binds <code>data/</code> for read access, and passes <code>TMDB_API_KEY</code> from the <code>.env</code> file. Additionally, <code>.env.example</code> is updated to remove the stale <code>PROJECT_ROOT</code> variable.
+  </p>
+
+  <h3>Operator Commands</h3>
+  <p class="prose">These are the only commands operators use to invoke the two services. No other form is correct.</p>
+  <table class="prop-table" style="margin-top:12px;">
+    <thead>
+      <tr><th>Step</th><th>Command</th><th>When</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1 — Export model</td>
+        <td><code>docker compose run --rm load-model</code></td>
+        <td>Before starting the stack; exports ONNX model and downloads corpus</td>
+      </tr>
+      <tr>
+        <td>2 — Start the stack</td>
+        <td><code>docker compose up -d</code></td>
+        <td>After step 1; starts triton, qdrant, api — does NOT start load-model or load-data</td>
+      </tr>
+      <tr>
+        <td>3 — Load data</td>
+        <td><code>docker compose run --rm load-data</code></td>
+        <td>After step 2, once triton and qdrant are healthy</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Why <code>docker compose run</code> works without <code>--profile</code>:</strong> <code>docker compose run</code> bypasses profile filtering — it starts a named service directly regardless of its <code>profiles</code> key. Profiles only affect <code>docker compose up</code>. So <code>docker compose run --rm load-model</code> is the correct invocation; adding <code>--profile load-model</code> is unnecessary and misleading.
+  </div>
+
+  <h3>Data Contract</h3>
+
+  <h4>load-model service</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Value</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>profiles</td>
+        <td><code>[load-model]</code></td>
+        <td>Prevents auto-start on <code>docker compose up -d</code>; invoke with <code>docker compose run --rm load-model</code></td>
+      </tr>
+      <tr>
+        <td>build</td>
+        <td><code>./pipeline</code></td>
+        <td>Build context pointing to <code>pipeline/Dockerfile</code></td>
+      </tr>
+      <tr>
+        <td>volumes</td>
+        <td><code>./data:/app/data</code>, <code>./model-repository:/app/model-repository</code></td>
+        <td>Host-persist model and data outputs</td>
+      </tr>
+      <tr>
+        <td>entrypoint (implicit)</td>
+        <td>Defined in <code>pipeline/Dockerfile</code> CMD/ENTRYPOINT</td>
+        <td>Should resolve to <code>/app/load-model.sh</code></td>
+      </tr>
+      <tr>
+        <td>depends_on</td>
+        <td>none</td>
+        <td>Runs before Triton starts</td>
+      </tr>
+      <tr>
+        <td>restart</td>
+        <td><code>no</code> (default)</td>
+        <td>One-shot; must not restart on failure</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>load-data service</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Value</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>profiles</td>
+        <td><code>[load-data]</code></td>
+        <td>Prevents auto-start on <code>docker compose up -d</code>; invoke with <code>docker compose run --rm load-data</code></td>
+      </tr>
+      <tr>
+        <td>build</td>
+        <td><code>./pipeline</code></td>
+        <td>Same image as <code>load-model</code></td>
+      </tr>
+      <tr>
+        <td>volumes</td>
+        <td><code>./data:/app/data</code></td>
+        <td>Reads embeddings written by <code>load-model</code></td>
+      </tr>
+      <tr>
+        <td>env_file</td>
+        <td><code>.env</code></td>
+        <td>Passes all vars from <code>.env</code>, including <code>TMDB_API_KEY</code></td>
+      </tr>
+      <tr>
+        <td>depends_on</td>
+        <td><code>triton: service_healthy</code>, <code>qdrant: service_healthy</code></td>
+        <td>Will not start until both pass healthcheck</td>
+      </tr>
+      <tr>
+        <td>restart</td>
+        <td><code>no</code> (default)</td>
+        <td>One-shot</td>
+      </tr>
+      <tr>
+        <td>command</td>
+        <td><code>["/app/load-data.sh"]</code></td>
+        <td>Overrides CMD to run the load-data entrypoint</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>.env.example</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Before</th><th>After</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>PROJECT_ROOT</td>
+        <td><code>"Absolute path to the repo root — used by pipeline scripts referencing data/ and model-repository/ directories"</code></td>
+        <td>Line removed entirely (variable is unused by pipeline scripts)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>pipeline/Dockerfile</td>
+        <td>Docker build context</td>
+        <td>Referenced via <code>build: ./pipeline</code> (from sibling feature #111)</td>
+      </tr>
+      <tr>
+        <td>triton service</td>
+        <td>Compose service with <code>service_healthy</code> condition</td>
+        <td><code>depends_on</code> in <code>load-data</code></td>
+      </tr>
+      <tr>
+        <td>qdrant service</td>
+        <td>Compose service with <code>service_healthy</code> condition</td>
+        <td><code>depends_on</code> in <code>load-data</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>triton service — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Healthy</td><td>Triton passes its healthcheck</td><td><code>load-data</code> is allowed to start</td></tr>
+      <tr><td>Unhealthy / not started</td><td>Triton fails healthcheck</td><td><code>load-data</code> is blocked by Compose before the container runs at all</td></tr>
+    </tbody>
+  </table>
+
+  <h4>qdrant service — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Healthy</td><td>Qdrant passes its healthcheck</td><td><code>load-data</code> is allowed to start</td></tr>
+      <tr><td>Unhealthy / not started</td><td>Qdrant fails healthcheck</td><td><code>load-data</code> is blocked by Compose</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>docker compose up -d</code></td>
+        <td><code>load-model</code> and <code>load-data</code> containers are NOT started</td>
+        <td>Profile gate prevents auto-start</td>
+        <td>Run without any <code>--profile</code> flag</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>docker compose run --rm load-model</code></td>
+        <td>Container starts, runs 01+02, exits</td>
+        <td>Correct operator invocation for step 1</td>
+        <td>No service dependencies required</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>docker compose run --rm load-data</code> with triton and qdrant healthy</td>
+        <td>Container starts, runs 03–05 (or skips 05), exits</td>
+        <td>Correct operator invocation for step 3</td>
+        <td>Triton and Qdrant healthy</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>docker compose run --rm load-data</code> with triton or qdrant unhealthy</td>
+        <td>Compose blocks start (<code>depends_on</code> not met)</td>
+        <td><code>depends_on: service_healthy</code> enforced by Compose</td>
+        <td>Triton or Qdrant not passing healthcheck</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>After <code>docker compose run --rm load-model</code>, <code>./data/</code> and <code>./model-repository/</code> contain outputs</td>
+        <td>Files visible on the host</td>
+        <td>Volume bind-mounts work</td>
+        <td>load-model succeeds</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>.env</code> contains <code>TMDB_API_KEY=abc123</code></td>
+        <td>Variable available inside load-data container</td>
+        <td><code>env_file</code> passthrough</td>
+        <td><code>.env</code> file present</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <p class="prose">Compose service definitions are not Python-testable. All behavior is verified by the integration test task:</p>
+  <ul class="criteria-list" style="margin-top:12px;">
+    <li><code>docker compose up -d</code> does not start <code>load-model</code> or <code>load-data</code></li>
+    <li><code>load-model</code> service mounts <code>./data</code> and <code>./model-repository</code> as <code>rw</code> volumes</li>
+    <li><code>load-data</code> service <code>depends_on</code> triton and qdrant with <code>service_healthy</code> condition</li>
+    <li><code>load-data</code> service passes <code>TMDB_API_KEY</code> from <code>.env</code> via <code>env_file</code></li>
+    <li><code>.env.example</code> no longer contains the <code>PROJECT_ROOT</code> variable</li>
+  </ul>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
