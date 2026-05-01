@@ -114,7 +114,7 @@
       <strong>Start all services.</strong> From the repository root, run: <div class="code-block">docker compose up -d</div> Wait approximately 30 seconds for all containers to become healthy.
     </li>
     <li>
-      <strong>Load the movie data.</strong> From the repository root, run the data pipeline: <div class="code-block">docker compose run --rm pipeline</div> This may take several minutes.
+      <strong>Load the movie data.</strong> From the repository root, run the data pipeline: <div class="code-block">docker compose run --rm load-data</div> This may take several minutes.
     </li>
     <li>
       <strong>Confirm the system is ready.</strong> Open <code>http://localhost:6333/dashboard</code> in your browser. A visible Qdrant Dashboard without errors confirms all services are running.
@@ -130,14 +130,14 @@
   <div class="remediation">
     <h4>Step 1 — Qdrant collection empty (Points count = 0)</h4>
     <p>Re-run the pipeline from the repository root:</p>
-    <div class="code-block">docker compose run --rm pipeline</div>
+    <div class="code-block">docker compose run --rm load-data</div>
     <p style="margin-top:10px;">If the collection still shows 0 records after the pipeline completes, file a bug using <code>/create-feature-request</code> with title: <em>Qdrant movies collection empty after pipeline run</em>.</p>
   </div>
 
   <div class="remediation">
     <h4>Step 2 — Vector field null, empty, or absent on stored records</h4>
     <p>Re-run the pipeline to regenerate embeddings:</p>
-    <div class="code-block">docker compose run --rm pipeline</div>
+    <div class="code-block">docker compose run --rm load-data</div>
     <p style="margin-top:10px;">If vectors remain missing, file a bug: <em>Qdrant movie records missing vector embeddings</em>.</p>
   </div>
 
@@ -160,7 +160,7 @@
   <div class="remediation">
     <h4>Step 5 — Search results are not relevant</h4>
     <p>Re-run the pipeline to verify embeddings were generated correctly:</p>
-    <div class="code-block">docker compose run --rm pipeline</div>
+    <div class="code-block">docker compose run --rm load-data</div>
     <p style="margin-top:10px;">If results remain irrelevant after re-running, file a bug: <em>Search results for "sci-fi space adventure" are not relevant</em>.</p>
   </div>
 
