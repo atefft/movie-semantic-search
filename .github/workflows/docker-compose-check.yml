@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build pipeline image and verify load scripts
+        run: |
+          docker compose -f docker-compose.yml build load-model
+          docker compose -f docker-compose.yml run --rm --entrypoint sh load-model -c "test -x /app/load-model.sh && test -x /app/load-data.sh"
+
       - name: Start services
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait --wait-timeout ${{ env.STARTUP_TIMEOUT }}
 

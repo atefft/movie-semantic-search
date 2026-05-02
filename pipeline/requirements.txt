@@ -1,7 +1,8 @@
 transformers==4.39.3
 torch>=2.0.0
+numpy==1.26.4
 onnxruntime==1.17.3
-numpy<2
+onnxscript==0.7.0
 tritonclient[grpc]
 tqdm
 qdrant-client
