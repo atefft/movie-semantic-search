@@ -2,14 +2,7 @@
 import argparse
 import json
 import numpy as np
-from dataclasses import dataclass
-
-
-@dataclass
-class PointStruct:
-    id: int
-    vector: list
-    payload: dict
+from qdrant_client.http.models import PointStruct
 
 
 def build_points(embeddings: np.ndarray, metadata: list) -> list:

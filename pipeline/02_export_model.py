@@ -6,6 +6,7 @@ import sys
 import pathlib
 
 import numpy as np
+import onnx
 import torch
 from transformers import AutoTokenizer, AutoModel
 import onnxruntime
@@ -72,6 +73,13 @@ def main():
         },
         opset_version=14,
     )
+
+    # Triton 24.01 bundles onnxruntime that supports IR version ≤ 9; modern onnx
+    # library writes IR version 10. Clamp to 9 so both pipeline and Triton can load it.
+    model_proto = onnx.load(str(ONNX_PATH))
+    if model_proto.ir_version > 9:
+        model_proto.ir_version = 9
+        onnx.save(model_proto, str(ONNX_PATH))
 
     print("Saving tokenizer files...", flush=True)
     tokenizer.save_pretrained(str(OUTPUT_DIR))
