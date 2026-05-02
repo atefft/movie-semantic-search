@@ -127,6 +127,13 @@
         <li>
           <strong>Export the embedding model.</strong> From the repository root, run the following command. This must complete before starting the services:
           <pre class="code-block">docker compose run --rm load-model</pre>
+          <div class="failure">
+            <span class="step-label">If this doesn't work:</span>
+            If the command exits with an error containing "no such file or directory", a stale cached pipeline image is missing the <code>load-model.sh</code> script. Rebuild the image from scratch and re-run:
+            <pre class="code-block">docker compose build --no-cache load-model
+docker compose run --rm load-model</pre>
+            This forces Docker to rebuild the pipeline image from the current source, picking up the latest <code>load-model.sh</code>.
+          </div>
         </li>
         <li>
           <strong>Start all services.</strong> From the repository root, run the following command and wait approximately 30 seconds for all containers to become healthy:
