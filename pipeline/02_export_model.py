@@ -71,6 +71,7 @@ def main():
             "token_embeddings": {0: "batch", 1: "sequence"},
         },
         opset_version=14,
+        dynamo=False,
     )
 
     print("Saving tokenizer files...", flush=True)
