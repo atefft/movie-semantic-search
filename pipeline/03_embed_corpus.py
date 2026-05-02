@@ -76,9 +76,9 @@ def join_data(metadata_map, summaries_map) -> list[dict]:
 def _infer_batch(grpcclient, client, input_ids, attention_mask, token_type_ids):
     B = input_ids.shape[0]
     inputs = [
-        grpcclient.InferInput("input_ids", [B, MAX_LENGTH], "INT32"),
-        grpcclient.InferInput("attention_mask", [B, MAX_LENGTH], "INT32"),
-        grpcclient.InferInput("token_type_ids", [B, MAX_LENGTH], "INT32"),
+        grpcclient.InferInput("input_ids", [B, MAX_LENGTH], "INT64"),
+        grpcclient.InferInput("attention_mask", [B, MAX_LENGTH], "INT64"),
+        grpcclient.InferInput("token_type_ids", [B, MAX_LENGTH], "INT64"),
     ]
     inputs[0].set_data_from_numpy(input_ids)
     inputs[1].set_data_from_numpy(attention_mask)
@@ -121,9 +121,9 @@ def main():
     _infer_batch(
         grpcclient,
         client,
-        dummy_enc["input_ids"].astype("int32"),
-        dummy_enc["attention_mask"].astype("int32"),
-        dummy_enc.get("token_type_ids", np.zeros_like(dummy_enc["input_ids"])).astype("int32"),
+        dummy_enc["input_ids"].astype("int64"),
+        dummy_enc["attention_mask"].astype("int64"),
+        dummy_enc.get("token_type_ids", np.zeros_like(dummy_enc["input_ids"])).astype("int64"),
     )
 
     all_embeddings = []
@@ -137,9 +137,9 @@ def main():
             max_length=MAX_LENGTH,
             truncation=True,
         )
-        input_ids = enc["input_ids"].astype("int32")
-        attention_mask = enc["attention_mask"].astype("int32")
-        token_type_ids = enc.get("token_type_ids", np.zeros_like(input_ids)).astype("int32")
+        input_ids = enc["input_ids"].astype("int64")
+        attention_mask = enc["attention_mask"].astype("int64")
+        token_type_ids = enc.get("token_type_ids", np.zeros_like(input_ids)).astype("int64")
         all_embeddings.append(_infer_batch(grpcclient, client, input_ids, attention_mask, token_type_ids))
 
     embeddings = np.concatenate(all_embeddings, axis=0).astype("float32")

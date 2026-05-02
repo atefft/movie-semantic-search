@@ -160,7 +160,7 @@ docker compose run --rm load-model</pre>
             <span class="step-label">If this doesn't work:</span>
             The record count shows 0 or the collection does not exist. From the repository root, re-run the data loader:
             <pre class="code-block">docker compose run --rm load-data</pre>
-            If the collection still shows 0 records after the loader completes, file a bug using <code>/create-feature-request</code>:
+            If the collection still shows 0 records after the loader completes, file a bug using <code>/report-bug</code>:
             <pre class="code-block">Title: Qdrant movies collection empty after load-data run
 Steps to reproduce:
   1. Run `docker compose run --rm load-data` from the repository root
@@ -179,7 +179,7 @@ Actual: Points count = 0</pre>
             <span class="step-label">If this doesn't work:</span>
             The vector field is null, empty, or absent. From the repository root, re-run the data loader to regenerate embeddings:
             <pre class="code-block">docker compose run --rm load-data</pre>
-            If vectors remain missing after the loader completes, file a bug using <code>/create-feature-request</code>:
+            If vectors remain missing after the loader completes, file a bug using <code>/report-bug</code>:
             <pre class="code-block">Title: Qdrant movie records missing vector embeddings
 Steps to reproduce:
   1. Run `docker compose run --rm load-data` from the repository root
@@ -198,7 +198,7 @@ Actual: Vector field is null or absent</pre>
             <span class="step-label">If this doesn't work:</span>
             The status shows Red, Yellow, or "Indexing." Wait 60 seconds and refresh. If the problem persists, restart the Qdrant service from the repository root:
             <pre class="code-block">docker compose restart qdrant</pre>
-            If the collection status never becomes Green, file a bug using <code>/create-feature-request</code>:
+            If the collection status never becomes Green, file a bug using <code>/report-bug</code>:
             <pre class="code-block">Title: Qdrant movies collection stuck in non-Green status
 Steps to reproduce:
   1. Open http://localhost:6333/dashboard from the repository root
@@ -219,7 +219,7 @@ Actual: Collection status = [observed status]</pre>
             <pre class="code-block">docker compose ps api</pre>
             If the container is not running, start it from the repository root:
             <pre class="code-block">docker compose up -d api</pre>
-            If the API is running but returns errors or empty results, file a bug using <code>/create-feature-request</code>:
+            If the API is running but returns errors or empty results, file a bug using <code>/report-bug</code>:
             <pre class="code-block">Title: GET /api/search returns error or empty results for "sci-fi space adventure"
 Steps to reproduce:
   1. Open http://localhost:8080/swagger-ui/index.html
@@ -240,7 +240,7 @@ Actual: [observed response code and body]</pre>
             <span class="step-label">If this doesn't work:</span>
             The results consist mostly of unrelated films (comedies, dramas, or documentaries unrelated to space). From the repository root, verify that the vector embeddings were generated correctly by re-running the data loader:
             <pre class="code-block">docker compose run --rm load-data</pre>
-            If results remain irrelevant after re-running the data loader, file a bug using <code>/create-feature-request</code>:
+            If results remain irrelevant after re-running the data loader, file a bug using <code>/report-bug</code>:
             <pre class="code-block">Title: Search results for "sci-fi space adventure" are not relevant
 Steps to reproduce:
   1. Follow steps 1-4 of the End-to-End Test Walkthrough from the repository root

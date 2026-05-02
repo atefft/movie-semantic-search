@@ -70,18 +70,15 @@ def main():
     limiter = RateLimiter(max_per_second=40)
 
     # Scroll all points where thumbnail_url is null
-    from qdrant_client.models import Filter, FieldCondition, MatchValue
+    from qdrant_client.models import Filter, IsNullCondition, PayloadField
 
     filter_condition = Filter(
         must=[
-            FieldCondition(
-                key="thumbnail_url",
-                match=MatchValue(value=None)
-            )
+            IsNullCondition(is_null=PayloadField(key="thumbnail_url"))
         ]
     )
 
-    points, _ = client.scroll(
+    points, next_offset = client.scroll(
         collection_name="movies",
         limit=100,
         scroll_filter=filter_condition,
@@ -101,11 +98,15 @@ def main():
                     points=[point.id]
                 )
 
-        # Fetch next batch
-        points, _ = client.scroll(
+        if next_offset is None:
+            break
+
+        # Fetch next batch using offset to avoid re-processing points without posters
+        points, next_offset = client.scroll(
             collection_name="movies",
             limit=100,
             scroll_filter=filter_condition,
+            offset=next_offset,
         )
 
 
