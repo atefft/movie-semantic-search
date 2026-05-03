@@ -3,7 +3,15 @@
 # making it impractical for standard GitHub Actions runners. The gRPC channel
 # in TritonGrpcConfig.java is lazy — no connection to port 8001 is made at
 # startup — so the stub only needs to handle the HTTP healthcheck on port 8000.
+#
+# The api service is also flipped into triton.mock=true so HuggingFaceQueryTokenizer
+# doesn't try to load tokenizer.json at startup. Those artifacts are produced by
+# load-model (skipped in CI to keep runs fast) and are bind-mounted into the
+# container at /app/tokenizer in normal operation.
 services:
+  api:
+    environment:
+      - TRITON_MOCK=true
   triton:
     image: python:3.12-alpine
     ports:
