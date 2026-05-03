@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — stop-services.sh</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 16px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; word-break: break-all; }
+  .badge-happy { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .badge-error { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: #3d1f1f; color: #f85149; border: 1px solid #b91c1c; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p.prose { color: #8b949e; font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / stop-services.sh</span>
+</header>
+
+<main>
+  <h2>stop-services.sh</h2>
+  <span class="badge">#204 — Add stop-services.sh — single entry-point to stop all services</span>
+  <p class="subtitle">Shell script at the repository root that stops all running Docker Compose containers. By default it preserves volumes for a fast restart; the <code>--clean</code> flag performs a full teardown including volumes.</p>
+
+  <h3>Overview</h3>
+  <p class="prose">
+    <code>stop-services.sh</code> wraps <code>docker compose down</code> with two modes of operation. Without flags it runs <code>docker compose down</code>, leaving named volumes intact so that a subsequent <code>./start-services.sh</code> can restart quickly without re-loading model artifacts or re-populating the database. With <code>--clean</code> it runs <code>docker compose down -v</code>, destroying all named volumes (<code>qdrant_data</code>, <code>model-repository</code>, <code>data</code>) and requiring <code>./start-services.sh --rebuild</code> to restore them. The script exits non-zero with a clear error message if the underlying <code>docker compose down</code> command fails, and prints a usage line and exits non-zero for any unrecognised flag.
+  </p>
+
+  <h3>Flags</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Flag</th><th>Command run</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>(none)</td>
+        <td><code>docker compose down</code></td>
+        <td>Stop and remove containers. Named volumes are preserved. Prints a confirmation that volumes were preserved and that <code>./start-services.sh</code> can be used to restart quickly.</td>
+      </tr>
+      <tr>
+        <td>--clean</td>
+        <td><code>docker compose down -v</code></td>
+        <td>Full teardown: stop containers and destroy all named volumes. Prints a warning that volumes (embeddings, model artifacts, database data) have been removed and that <code>./start-services.sh --rebuild</code> will be required next time.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Exit code</td>
+        <td>integer</td>
+        <td>Exit code of the script</td>
+        <td>0 on success; non-zero if <code>docker compose down</code> fails or an unrecognised flag is supplied</td>
+      </tr>
+      <tr>
+        <td>stdout</td>
+        <td>string</td>
+        <td>Status and error messages</td>
+        <td>See message formats below</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Message Formats</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Event</th><th>Message</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Default mode success</td>
+        <td>Confirmation that services have stopped and volumes are preserved; instructs user to run <code>./start-services.sh</code> to restart</td>
+      </tr>
+      <tr>
+        <td>--clean mode success</td>
+        <td>Warning that volumes (embeddings, model artifacts, database data) have been removed; instructs user to run <code>./start-services.sh --rebuild</code> next time</td>
+      </tr>
+      <tr>
+        <td>docker compose down fails</td>
+        <td>Clear error message indicating failure; exits non-zero</td>
+      </tr>
+      <tr>
+        <td>Unrecognised flag</td>
+        <td>Usage line (e.g. <code>Usage: ./stop-services.sh [--clean]</code>); exits non-zero</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Observable Output Examples</h4>
+  <div class="code-block">$ ./stop-services.sh
+[docker compose output...]
+Services stopped. Volumes preserved — run ./start-services.sh to restart quickly.</div>
+
+  <div class="code-block" style="margin-top:12px;">$ ./stop-services.sh --clean
+[docker compose output...]
+WARNING: Volumes removed (embeddings, model artifacts, database data).
+Run ./start-services.sh --rebuild next time to restore them.</div>
+
+  <div class="code-block" style="margin-top:12px;">$ ./stop-services.sh --unknown
+Usage: ./stop-services.sh [--clean]
+$ echo $?
+1</div>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>docker compose</td>
+        <td>CLI command</td>
+        <td>Invoked via <code>docker compose down</code> or <code>docker compose down -v</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>docker compose — Mock Behaviors</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Behavior</th><th>Badge</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Default stop succeeds</td>
+        <td><code>docker compose down</code> exits 0; script prints volume-preserved confirmation and exits 0</td>
+        <td><span class="badge-happy">happy</span></td>
+      </tr>
+      <tr>
+        <td>Clean stop succeeds</td>
+        <td><code>docker compose down -v</code> exits 0; script prints volume-removed warning and exits 0</td>
+        <td><span class="badge-happy">happy</span></td>
+      </tr>
+      <tr>
+        <td>docker compose down fails</td>
+        <td><code>docker compose down</code> exits non-zero; script prints error message and propagates the exit code</td>
+        <td><span class="badge-error">error</span></td>
+      </tr>
+      <tr>
+        <td>Unrecognised flag supplied</td>
+        <td>Script prints usage line and exits non-zero without invoking <code>docker compose</code></td>
+        <td><span class="badge-error">error</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>No flags; <code>docker compose down</code> exits 0</td>
+        <td>Exit code 0; stdout confirms volumes preserved and restart path</td>
+        <td>Normal stop, volumes kept</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>--clean</code>; <code>docker compose down -v</code> exits 0</td>
+        <td>Exit code 0; stdout warns volumes removed and requires <code>--rebuild</code></td>
+        <td>Full teardown including volumes</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>No flags; <code>docker compose down</code> exits non-zero</td>
+        <td>Exit code non-zero; stdout contains error message</td>
+        <td>Compose failure propagated</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Unrecognised flag (e.g. <code>--foo</code>)</td>
+        <td>Exit code non-zero; stdout contains usage line; <code>docker compose</code> never invoked</td>
+        <td>Bad flag rejected with usage guidance</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <p class="prose">Shell scripts have no Python unit tests. All behavior is verified by the integration test suite. The observable contract above defines what integration tests must assert:</p>
+  <ul class="criteria-list" style="margin-top:12px;">
+    <li>Default mode: exit code 0; stdout confirms volumes are preserved and instructs user to run <code>./start-services.sh</code></li>
+    <li>--clean mode: exit code 0; stdout warns that volumes (embeddings, model artifacts, database data) have been removed and instructs user to run <code>./start-services.sh --rebuild</code></li>
+    <li>docker compose down fails: exit code non-zero; stdout contains a clear error message</li>
+    <li>Unrecognised flag: exit code non-zero; stdout contains a usage line; <code>docker compose</code> is not invoked</li>
+  </ul>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
