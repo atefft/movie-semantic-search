@@ -61,8 +61,12 @@ run_test3() {
   local name="test3_default_path_healthy"
 
   if [[ ! -f "$REPO_ROOT/.env" ]]; then
-    fail "$name (skipped: .env file not present)"
-    return
+    if [[ -f "$REPO_ROOT/.env.example" ]]; then
+      cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
+    else
+      fail "$name (skipped: .env file not present)"
+      return
+    fi
   fi
 
   docker compose -f "$REPO_ROOT/docker-compose.yml" up -d 2>&1
@@ -101,8 +105,12 @@ run_test5() {
   local name="test5_rebuild_full_pipeline"
 
   if [[ ! -f "$REPO_ROOT/.env" ]]; then
-    fail "$name (skipped: .env file not present)"
-    return
+    if [[ -f "$REPO_ROOT/.env.example" ]]; then
+      cp "$REPO_ROOT/.env.example" "$REPO_ROOT/.env"
+    else
+      fail "$name (skipped: .env file not present)"
+      return
+    fi
   fi
 
   local output exit_code
