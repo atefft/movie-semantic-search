@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — StopServicesDevContainer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 16px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre; }
+  .code-block-label { font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-top: 16px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .callout { border-radius: 6px; padding: 12px 16px; margin-top: 16px; font-size: 0.875rem; line-height: 1.6; }
+  .callout.note { background: #1c2333; border: 1px solid #388bfd; color: #c9d1d9; }
+  .callout.warning { background: #2d1f00; border: 1px solid #d29922; color: #e3b341; }
+  .callout strong { font-weight: 600; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  .nav-links { display: flex; gap: 24px; margin-top: 32px; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p.prose { color: #8b949e; font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="../../index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / Feature #248 / StopServicesDevContainer</span>
+</header>
+
+<main>
+  <h2>StopServicesDevContainer</h2>
+  <span class="badge">#248 — Add --using-dev-container flag to stop-services.sh</span>
+  <p class="subtitle">Spec for the <code>--using-dev-container</code> flag in <code>stop-services.sh</code> — disconnects the dev container from the compose network before teardown so Docker can remove the network cleanly.</p>
+
+  <h3>Overview</h3>
+  <p class="prose">
+    <code>stop-services.sh</code> currently runs <code>docker compose down</code> without accounting for a dev container that may be attached to the compose project network. Docker will not remove a network that still has active endpoints, so if a dev container is connected (either by a prior <code>./start-services.sh --using-dev-container</code> or a manual <code>docker network connect</code>), the teardown will fail to remove the network. This component extends <code>stop-services.sh</code> with a <code>--using-dev-container</code> flag that, when present, disconnects the dev container from the compose network before running <code>docker compose down</code> or <code>docker compose down -v</code>. The disconnect is a silent no-op if the container is not currently connected or if the network does not exist.
+  </p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>--using-dev-container</td>
+        <td>CLI flag</td>
+        <td>Signals script is running inside a dev container</td>
+        <td>Optional. Combinable with <code>--clean</code> in any order. When present: disconnect step runs before <code>docker compose down</code>. When absent: existing behavior unchanged.</td>
+      </tr>
+      <tr>
+        <td>--clean</td>
+        <td>CLI flag</td>
+        <td>Requests full teardown including volumes</td>
+        <td>Optional. Unchanged from prior behavior. Combinable with <code>--using-dev-container</code>.</td>
+      </tr>
+      <tr>
+        <td>Exit code</td>
+        <td>integer</td>
+        <td>Script exit status</td>
+        <td><code>0</code> on success. Non-zero on: docker compose failure, unrecognised flag. The disconnect step never causes a non-zero exit.</td>
+      </tr>
+      <tr>
+        <td>Usage line</td>
+        <td>stderr string</td>
+        <td>Printed on unrecognised flags</td>
+        <td>Updated to: <code>Usage: stop-services.sh [--clean] [--using-dev-container]</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Injected As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>docker compose / docker-compose</td>
+        <td>Shell command</td>
+        <td>Detected at runtime (existing logic unchanged)</td>
+      </tr>
+      <tr>
+        <td>docker network disconnect</td>
+        <td>Shell command</td>
+        <td>Called directly before <code>docker compose down</code> when flag present</td>
+      </tr>
+      <tr>
+        <td>/etc/hostname</td>
+        <td>File</td>
+        <td>Read to obtain the dev container's short container ID</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependency Mock Behaviors</h3>
+
+  <h4>docker network disconnect</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> Dev container connected</td>
+        <td><code>docker network disconnect</code> exits 0</td>
+        <td>Container was connected by prior <code>start-services.sh --using-dev-container</code> or manual connect</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">no-op</span> Container not connected</td>
+        <td><code>docker network disconnect</code> exits non-zero</td>
+        <td>Suppressed via <code>2&gt;/dev/null || true</code> — script continues</td>
+      </tr>
+      <tr>
+        <td><span class="tag error">no-op</span> Network does not exist</td>
+        <td><code>docker network disconnect</code> exits non-zero</td>
+        <td>Same suppression — network may never have been created</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="code-block-label">Happy-path disconnect command</p>
+  <div class="code-block">docker network disconnect movie-semantic-search_default a3f2c1d4e5b6</div>
+
+  <p class="code-block-label">Error output suppressed by <code>2&gt;/dev/null || true</code></p>
+  <div class="code-block">Error response from daemon: container a3f2c1d4e5b6 is not connected to network movie-semantic-search_default</div>
+
+  <h4>/etc/hostname</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Mock Setup</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag happy">happy</span> Normal Docker runtime</td>
+        <td>File contains 12-char hex container ID</td>
+        <td>Docker sets this automatically for every container</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout note">
+    <strong>Network name derivation:</strong> The compose network name is derived as <code>$(basename "$(pwd)")_default</code>, where <code>$(pwd)</code> is the repo root (the script <code>cd</code>s to its own directory at line 3). For this repo the network is <code>movie-semantic-search_default</code>. This matches the approach used in the sibling feature #247 for <code>start-services.sh</code>.
+  </div>
+
+  <h3>Implementation Sketch</h3>
+
+  <p class="code-block-label">Flag parsing addition (extend existing for loop)</p>
+  <div class="code-block">USING_DEV_CONTAINER=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --clean) CLEAN=true ;;
+    --using-dev-container) USING_DEV_CONTAINER=true ;;
+    *) echo "Usage: stop-services.sh [--clean] [--using-dev-container]" &gt;&amp;2; exit 1 ;;
+  esac
+done</div>
+
+  <p class="code-block-label">Disconnect block (insert before the if [ "$CLEAN" = true ] block)</p>
+  <div class="code-block">if [ "$USING_DEV_CONTAINER" = true ]; then
+  COMPOSE_NETWORK="$(basename "$(pwd)")_default"
+  DEV_CONTAINER_ID="$(cat /etc/hostname)"
+  docker network disconnect "$COMPOSE_NETWORK" "$DEV_CONTAINER_ID" 2>/dev/null || true
+fi</div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th><th>Mock Setup</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>--using-dev-container</code> only</td>
+        <td>Exit 0; "Services stopped. Volumes preserved"</td>
+        <td>Happy path — dev container was connected</td>
+        <td><code>docker network disconnect</code> exits 0; <code>docker compose down</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>--using-dev-container --clean</code></td>
+        <td>Exit 0; WARNING with volume names</td>
+        <td>Combined flags, order 1</td>
+        <td>Same mocks; <code>docker compose down -v</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>--clean --using-dev-container</code></td>
+        <td>Exit 0; WARNING with volume names</td>
+        <td>Combined flags, order 2</td>
+        <td>Same mocks</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>--using-dev-container</code> but not connected</td>
+        <td>Exit 0; disconnect fails silently; down proceeds</td>
+        <td>No-op disconnect</td>
+        <td><code>docker network disconnect</code> exits 1; <code>docker compose down</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>--using-dev-container</code> but network gone</td>
+        <td>Exit 0; disconnect fails silently; down proceeds</td>
+        <td>Network already removed</td>
+        <td><code>docker network disconnect</code> exits 1; <code>docker compose down</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>No flags</td>
+        <td>Exit 0; "Volumes preserved" — no disconnect call</td>
+        <td>Existing default behavior unchanged</td>
+        <td><code>docker compose down</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>--clean</code> only</td>
+        <td>Exit 0; WARNING — no disconnect call</td>
+        <td>Existing --clean behavior unchanged</td>
+        <td><code>docker compose down -v</code> exits 0</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Unrecognised flag</td>
+        <td>Exit 1; stderr contains updated usage line</td>
+        <td>Usage line now includes <code>--using-dev-container</code></td>
+        <td>N/A</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Unit Test Checklist</h3>
+  <ul class="criteria-list">
+    <li><code>--using-dev-container</code> accepted without error (exit 0, no "Usage:" in output)</li>
+    <li><code>--using-dev-container --clean</code> accepted without error (exit 0, no "Usage:" in output)</li>
+    <li><code>--clean --using-dev-container</code> accepted without error (exit 0, no "Usage:" in output)</li>
+    <li>When <code>--using-dev-container</code> present and disconnect succeeds: exit 0, "Volumes preserved" in output</li>
+    <li>When <code>docker network disconnect</code> exits non-zero: script continues and exits 0 (no-op)</li>
+    <li>When <code>--using-dev-container</code> absent: <code>docker network disconnect</code> is NOT called</li>
+    <li>Usage line (on unrecognised flag) contains <code>--using-dev-container</code></li>
+    <li>All existing tests (default mode, --clean, compose failure, V1 fallback, V2 preferred) continue to pass</li>
+  </ul>
+
+  <div class="callout warning">
+    <strong>Testing /etc/hostname:</strong> Because <code>/etc/hostname</code> cannot be overridden in shell unit tests without a mock <code>cat</code>, the implementation sets <code>DEV_CONTAINER_ID="$(cat /etc/hostname)"</code> once in the <code>--using-dev-container</code> block. Tests verify the disconnect call fires by intercepting <code>docker network disconnect</code> in the mock docker binary and asserting it is invoked. The exact container ID value in tests is whatever <code>/etc/hostname</code> contains in the test environment (a valid short ID if running inside a container).
+  </div>
+
+  <div class="nav-links">
+    <a href="../../index.html" class="back-link">← Architecture Overview</a>
+  </div>
+</main>
+
+<footer>Movie Semantic Search — Architecture Docs</footer>
+
+</body>
+</html>
