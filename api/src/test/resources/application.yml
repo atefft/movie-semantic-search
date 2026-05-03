@@ -1,0 +1,32 @@
+triton:
+  host: ${TRITON_HOST:localhost}
+  port: 8001
+  model-name: all-minilm-l6-v2
+  deadline-ms: 5000
+  max-length: 128
+  tokenizer-path: ${user.dir}/../model-repository/all-minilm-l6-v2/1/tokenizer.json
+
+qdrant:
+  base-url: ${QDRANT_BASE_URL:http://localhost:6333}
+  mock: false
+
+search:
+  default-limit: 10
+
+autocomplete:
+  limit: 3
+
+tmdb:
+  poster-base-url: https://image.tmdb.org/t/p/w200
+  api-key: ${TMDB_API_KEY:}
+
+dataset:
+  corpus-url: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
+  data-dir: data/corpus
+
+model:
+  script-dir: ../pipeline
+  model-dir: ../model-repository
+
+project:
+  root: .
