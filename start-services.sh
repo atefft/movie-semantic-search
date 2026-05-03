@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if docker compose version &>/dev/null 2>&1; then
+  DC="docker compose"
+elif docker-compose version &>/dev/null 2>&1; then
+  DC="docker-compose"
+else
+  echo "Error: neither 'docker compose' nor 'docker-compose' is available" >&2
+  exit 1
+fi
+
 REBUILD=false
 
 for arg in "$@"; do
@@ -52,20 +61,23 @@ wait_for_healthy() {
 }
 
 if [[ "$REBUILD" == "true" ]]; then
-  docker compose down --rmi local -v
+  $DC down --rmi local -v
 
-  rm -rf data/raw/ data/embeddings/ \
+  # Files written by containers may be owned by root or container UIDs that
+  # the host user cannot remove directly. Delete them from inside a container.
+  docker run --rm -v "$(pwd):/work" -w /work alpine rm -rf \
+    data/raw data/embeddings \
     model-repository/all-minilm-l6-v2/1/model.onnx \
     model-repository/all-minilm-l6-v2/1/tokenizer.json \
     model-repository/all-minilm-l6-v2/1/tokenizer_config.json \
     model-repository/all-minilm-l6-v2/1/vocab.txt \
     model-repository/all-minilm-l6-v2/1/special_tokens_map.json
 
-  docker compose run --rm load-model || (echo "[rebuild] load-model phase failed — aborting" && exit 1)
-  docker compose up -d || (echo "[rebuild] services-up phase failed — aborting" && exit 1)
-  docker compose run --rm load-data || (echo "[rebuild] load-data phase failed — aborting" && exit 1)
+  $DC run --rm load-model || (echo "[rebuild] load-model phase failed — aborting" && exit 1)
+  $DC up -d || (echo "[rebuild] services-up phase failed — aborting" && exit 1)
+  $DC run --rm load-data || (echo "[rebuild] load-data phase failed — aborting" && exit 1)
 else
-  docker compose up -d
+  $DC up -d
 fi
 
 wait_for_healthy || exit 1

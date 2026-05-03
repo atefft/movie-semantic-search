@@ -14,6 +14,24 @@ public class TritonProperties {
     private String modelName = "all-MiniLM-L6-v2";
     private long deadlineMs = 5000;
     private boolean mock = false;
+    private int maxLength = 128;
+    private String tokenizerPath = "/app/tokenizer/tokenizer.json";
+
+    public int getMaxLength() {
+        return maxLength;
+    }
+
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+    }
+
+    public String getTokenizerPath() {
+        return tokenizerPath;
+    }
+
+    public void setTokenizerPath(String tokenizerPath) {
+        this.tokenizerPath = tokenizerPath;
+    }
 
     public String getHost() {
         return host;
