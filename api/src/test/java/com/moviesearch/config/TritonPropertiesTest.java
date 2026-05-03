@@ -14,7 +14,7 @@ class TritonPropertiesTest {
 
     @Test
     void defaultModelNameIsAllMiniLML6v2() {
-        assertThat(tritonProperties.getModelName()).isEqualTo("all-MiniLM-L6-v2");
+        assertThat(tritonProperties.getModelName()).isEqualTo("all-minilm-l6-v2");
     }
 
     @Test
