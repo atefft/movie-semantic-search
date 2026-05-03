@@ -14,3 +14,10 @@ pipeline/*.egg-info
 *.DS_Store
 prompt.txt
 .claude/settings.local.json
+
+# Local workflow helpers and unpublished spec drafts
+scripts/
+docs/specs/feature-3/
+docs/specs/feature-4/
+docs/specs/feature-5/*.md
+docs/specs/feature-6/*.md
