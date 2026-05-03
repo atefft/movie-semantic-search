@@ -2,14 +2,12 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE_FILE="$REPO_ROOT/docker-compose.ci.yml"
-PROJECT_VOLUME="task-215_qdrant_data"
+COMPOSE_ARGS=(-f "$REPO_ROOT/docker-compose.yml" -f "$REPO_ROOT/docker-compose.ci.yml")
 PASS=0
 FAIL=0
 
 cleanup() {
-  docker compose -f "$COMPOSE_FILE" down -v &>/dev/null || true
-  docker volume rm "$PROJECT_VOLUME" &>/dev/null || true
+  docker compose "${COMPOSE_ARGS[@]}" down -v &>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -22,12 +20,13 @@ echo "=== Integration test: stop-services.sh ==="
 echo ""
 echo "--- Test 1: default stop preserves qdrant_data volume ---"
 
-docker compose -f "$COMPOSE_FILE" up -d --wait --wait-timeout 120
-docker volume create "$PROJECT_VOLUME" &>/dev/null
+docker compose "${COMPOSE_ARGS[@]}" up -d --wait --wait-timeout 120
+# Discover the actual compose-managed volume name (e.g. movie-semantic-search_qdrant_data)
+PROJECT_VOLUME=$(docker volume ls -q | grep '_qdrant_data$' | head -1)
 
 "$REPO_ROOT/stop-services.sh"
 
-running=$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null)
+running=$(docker compose "${COMPOSE_ARGS[@]}" ps -q 2>/dev/null)
 if [ -z "$running" ]; then
   pass "No containers running after stop-services.sh"
 else
@@ -44,12 +43,11 @@ fi
 echo ""
 echo "--- Test 2: --clean stop removes qdrant_data volume ---"
 
-docker compose -f "$COMPOSE_FILE" up -d --wait --wait-timeout 120
-docker volume create "$PROJECT_VOLUME" &>/dev/null
+docker compose "${COMPOSE_ARGS[@]}" up -d --wait --wait-timeout 120
 
 "$REPO_ROOT/stop-services.sh" --clean
 
-running=$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null)
+running=$(docker compose "${COMPOSE_ARGS[@]}" ps -q 2>/dev/null)
 if [ -z "$running" ]; then
   pass "No containers running after stop-services.sh --clean"
 else
