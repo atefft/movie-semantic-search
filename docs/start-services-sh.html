@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Semantic Search — start-services.sh Spec</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+  header { border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; color: #e6edf3; }
+  header .breadcrumb { font-size: 0.85rem; color: #8b949e; }
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; color: #e6edf3; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; color: #c9d1d9; }
+  h4 { font-size: 0.9rem; font-weight: 600; margin: 16px 0 6px; color: #c9d1d9; }
+  .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 28px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; margin-bottom: 20px; }
+  .prop-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.875rem; }
+  .prop-table th { text-align: left; padding: 8px 12px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+  .prop-table td { padding: 8px 12px; border: 1px solid #30363d; vertical-align: top; }
+  .prop-table td:first-child { color: #79c0ff; font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+  .prop-table tr:hover td { background: #161b22; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.85em; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 1px 5px; color: #79c0ff; }
+  .code-block { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.82rem; color: #e6edf3; overflow-x: auto; line-height: 1.6; margin-top: 8px; white-space: pre; }
+  .criteria-list { list-style: none; padding: 0; margin-top: 8px; }
+  .criteria-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; color: #c9d1d9; }
+  .criteria-list li:last-child { border-bottom: none; }
+  .criteria-list li::before { content: "☐"; color: #58a6ff; font-size: 1rem; flex-shrink: 0; line-height: 1.4; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: #58a6ff; text-decoration: none; font-size: 0.85rem; margin-top: 32px; }
+  .back-link:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 48px; }
+  p.prose { color: #8b949e; font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; vertical-align: middle; }
+  .tag.happy { background: #1f3d2e; color: #3fb950; border: 1px solid #2ea043; }
+  .tag.error { background: #3d1f1f; color: #f85149; border: 1px solid #da3633; }
+  .tag.warn { background: #2e2a1f; color: #d29922; border: 1px solid #9e6a03; }
+  .callout { border-left: 3px solid #58a6ff; background: #161b22; border-radius: 4px; padding: 12px 16px; margin: 12px 0; font-size: 0.875rem; color: #c9d1d9; line-height: 1.5; }
+  .callout.warning { border-color: #d29922; }
+  .callout.critical { border-color: #f85149; }
+  .callout strong { color: #e6edf3; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Movie Semantic Search</h1>
+  <span class="breadcrumb">/ <a href="index.html" style="color:#58a6ff;text-decoration:none">Architecture</a> / start-services.sh</span>
+</header>
+
+<main>
+  <h2>start-services.sh</h2>
+  <span class="badge">#203 — Add start-services.sh — single entry-point to start all services</span>
+  <p class="subtitle">Bash script at the repo root providing a single entry point for the service lifecycle — fast default path and full-rebuild path.</p>
+
+  <h3>Overview</h3>
+  <p class="prose">
+    <code>start-services.sh</code> is a Bash script at the repository root that provides a single entry point for the service lifecycle. It has two modes: a fast default path (<code>./start-services.sh</code>) that brings up containers using existing images and volumes, polls until all three services are healthy, and prints access URLs; and a full-rebuild path (<code>./start-services.sh --rebuild</code>) that wipes containers, volumes, locally-built images, and model/data files, then runs the complete pipeline from scratch. The script validates that <code>.env</code> exists before doing any Docker work, enforces a configurable health-check timeout, and exits non-zero with a clear message on any failure.
+  </p>
+
+  <h3>Data Contract</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Property</th><th>Type</th><th>Description</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>(no flag)</td>
+        <td>mode</td>
+        <td>Default fast path</td>
+        <td>Runs <code>docker compose up -d</code> then polls all services healthy, then prints URLs</td>
+      </tr>
+      <tr>
+        <td>--rebuild</td>
+        <td>mode</td>
+        <td>Full clean rebuild path</td>
+        <td>Prints warning, requires "yes" confirmation, wipes everything, runs pipeline</td>
+      </tr>
+      <tr>
+        <td>unrecognised flag</td>
+        <td>exit</td>
+        <td>Any other argument</td>
+        <td>Prints usage line to stderr, exits 1</td>
+      </tr>
+      <tr>
+        <td>HEALTH_TIMEOUT</td>
+        <td>env var (integer, seconds)</td>
+        <td>Max seconds to wait for all services to become healthy</td>
+        <td>Default: <code>120</code>; overridable at invocation: <code>HEALTH_TIMEOUT=60 ./start-services.sh</code></td>
+      </tr>
+      <tr>
+        <td>.env file</td>
+        <td>file presence</td>
+        <td>Must exist in working directory</td>
+        <td>Checked via <code>[[ -f .env ]]</code> before any docker calls; exits 1 with helpful message if absent</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dependencies</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Dependency</th><th>Interface / Type</th><th>Invoked As</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>docker compose</td>
+        <td>CLI sub-command</td>
+        <td><code>docker compose up -d</code>, <code>docker compose down --rmi local -v</code>, <code>docker compose run --rm load-model</code>, <code>docker compose run --rm load-data</code></td>
+      </tr>
+      <tr>
+        <td>curl</td>
+        <td>CLI</td>
+        <td><code>curl -sf &lt;url&gt;</code> for health-endpoint polling</td>
+      </tr>
+      <tr>
+        <td>.env file</td>
+        <td>file presence</td>
+        <td>Checked via <code>[[ -f .env ]]</code> at start of script</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Health endpoints polled (default path + post-up in rebuild)</h4>
+  <div class="code-block">triton  → http://localhost:8000/v2/health/ready
+qdrant  → http://localhost:6333/healthz
+api     → http://localhost:8080/api/operator/health</div>
+
+  <div class="callout">
+    <strong>Poll interval:</strong> 5 seconds between retries. <code>HEALTH_TIMEOUT</code> (default 120 s) is the total wall-clock budget for all three services to become healthy.
+  </div>
+
+  <h4>docker compose down --rmi local -v (--rebuild only)</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Tag</th><th>Behavior</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Success</td>
+        <td><span class="tag happy">happy</span></td>
+        <td>Exits 0, containers + volumes + local images removed</td>
+        <td><code>--rmi local</code> removes only locally-built images (api, pipeline); pulled images like triton/qdrant are preserved</td>
+      </tr>
+      <tr>
+        <td>No running containers</td>
+        <td><span class="tag happy">happy</span></td>
+        <td>Exits 0 (no-op)</td>
+        <td>Safe to run on a clean machine</td>
+      </tr>
+      <tr>
+        <td>Failure</td>
+        <td><span class="tag error">error</span></td>
+        <td>Script propagates exit code</td>
+        <td>Rebuild aborted; <code>set -euo pipefail</code> handles propagation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">
+    <strong>--rmi local vs --rmi all:</strong> Use <code>--rmi local</code> to avoid re-pulling large pulled images like the Triton server (~10 GB). Only the locally-built api and pipeline images are removed and rebuilt.
+  </div>
+
+  <h4>docker compose run --rm load-model / load-data (--rebuild only)</h4>
+  <table class="prop-table">
+    <thead>
+      <tr><th>Scenario</th><th>Tag</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Success</td>
+        <td><span class="tag happy">happy</span></td>
+        <td>Exits 0; next phase begins</td>
+      </tr>
+      <tr>
+        <td>Non-zero exit</td>
+        <td><span class="tag error">error</span></td>
+        <td>Script exits 1 with phase name in error message, e.g. "load-model phase failed — aborting"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>File Cleanup in --rebuild</h3>
+  <p class="prose">To match <code>make clean</code> semantics, <code>--rebuild</code> removes these files before running the pipeline (in addition to docker compose teardown):</p>
+  <div class="code-block">rm -rf data/raw/ data/embeddings/ \
+  model-repository/all-minilm-l6-v2/1/model.onnx \
+  model-repository/all-minilm-l6-v2/1/tokenizer.json \
+  model-repository/all-minilm-l6-v2/1/tokenizer_config.json \
+  model-repository/all-minilm-l6-v2/1/vocab.txt \
+  model-repository/all-minilm-l6-v2/1/special_tokens_map.json</div>
+
+  <h3>Edge Cases</h3>
+  <table class="prop-table">
+    <thead>
+      <tr><th>#</th><th>Input</th><th>Expected Output</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>.env</code> missing</td>
+        <td>Exit 1, message: "Error: .env file not found. Create it with TMDB_API_KEY=..."</td>
+        <td>Guard before any Docker work</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Unknown flag <code>--foo</code></td>
+        <td>Exit 1, usage line printed</td>
+        <td>Catch-all for unrecognised flags</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>HEALTH_TIMEOUT=5</code>, service takes 10 s</td>
+        <td>Exit 1, message names the unhealthy service(s)</td>
+        <td>Timeout enforced; clear error for operator</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>--rebuild</code>, user types "no" at prompt</td>
+        <td>Exit 1, "Aborting." message</td>
+        <td>Confirmation guard prevents accidental data loss</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>--rebuild</code>, user types "yes" at prompt</td>
+        <td>Proceeds to wipe and rebuild</td>
+        <td>Happy path for rebuild</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>load-model</code> phase fails during <code>--rebuild</code></td>
+        <td>Exit 1, "load-model phase failed — aborting" message</td>
+        <td>Phase failure propagation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Access URLs printed on success</h3>
+  <div class="code-block">Services are healthy. Access:
+  Search UI:   http://localhost:8080
+  Qdrant:      http://localhost:6333/dashboard
+  Swagger UI:  http://localhost:8080/swagger-ui/index.html</div>
+
+  <h3>Unit Test Checklist</h3>
+  <p class="prose">Since this is a shell script, tests are verified via <code>bash -n</code> (syntax check) and targeted invocation with controlled inputs:</p>
+  <ul class="criteria-list">
+    <li><code>bash -n start-services.sh</code> exits 0 (no syntax errors)</li>
+    <li>Missing <code>.env</code>: exits 1, stderr/stdout contains "not found"</li>
+    <li>Unrecognised flag <code>--foo</code>: exits 1, output contains "Usage"</li>
+    <li><code>--rebuild</code> with input "no": exits 1 (aborted without docker calls)</li>
+    <li><code>--rebuild</code> with input "yes": proceeds past confirmation (docker calls will fail in unit context — acceptable)</li>
+    <li><code>HEALTH_TIMEOUT</code> is read from environment when set</li>
+  </ul>
+
+  <a class="back-link" href="index.html">← Back to Architecture Overview</a>
+</main>
+
+<footer>Movie Semantic Search &mdash; <a href="https://github.com/atefft/movie-semantic-search" style="color:#58a6ff">GitHub</a></footer>
+
+</body>
+</html>
