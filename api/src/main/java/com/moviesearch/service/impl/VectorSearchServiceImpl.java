@@ -2,6 +2,7 @@ package com.moviesearch.service.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.moviesearch.config.QdrantProperties;
+import com.moviesearch.config.TmdbProperties;
 import com.moviesearch.exception.VectorSearchServiceException;
 import com.moviesearch.model.MovieResult;
 import com.moviesearch.model.VectorSearchRequest;
@@ -22,10 +23,28 @@ public class VectorSearchServiceImpl implements VectorSearchService {
 
     private final RestTemplate restTemplate;
     private final String searchUrl;
+    private final String posterBaseUrl;
 
-    public VectorSearchServiceImpl(RestTemplate restTemplate, QdrantProperties properties) {
+    public VectorSearchServiceImpl(RestTemplate restTemplate,
+                                   QdrantProperties properties,
+                                   TmdbProperties tmdbProperties) {
         this.restTemplate = restTemplate;
         this.searchUrl = properties.getBaseUrl() + "/collections/movies/points/search";
+        String base = tmdbProperties.getPosterBaseUrl();
+        this.posterBaseUrl = base == null ? "" : base.replaceAll("/+$", "");
+    }
+
+    private String absolutePosterUrl(String stored) {
+        if (stored == null || stored.isEmpty()) {
+            return null;
+        }
+        if (stored.startsWith("http://") || stored.startsWith("https://")) {
+            return stored;
+        }
+        if (posterBaseUrl.isEmpty()) {
+            return stored;
+        }
+        return posterBaseUrl + (stored.startsWith("/") ? stored : "/" + stored);
     }
 
     @Override
@@ -41,7 +60,7 @@ public class VectorSearchServiceImpl implements VectorSearchService {
                     .genres(r.payload.genres)
                     .score(r.score)
                     .summarySnippet(r.payload.summarySnippet)
-                    .thumbnailUrl(r.payload.thumbnailUrl)
+                    .thumbnailUrl(absolutePosterUrl(r.payload.thumbnailUrl))
                     .build())
                 .toList();
             return new VectorSearchResponse(results);

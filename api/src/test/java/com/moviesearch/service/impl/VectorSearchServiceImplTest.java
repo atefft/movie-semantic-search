@@ -1,6 +1,7 @@
 package com.moviesearch.service.impl;
 
 import com.moviesearch.config.QdrantProperties;
+import com.moviesearch.config.TmdbProperties;
 import com.moviesearch.exception.VectorSearchServiceException;
 import com.moviesearch.model.MovieResult;
 import com.moviesearch.model.VectorSearchRequest;
@@ -24,6 +25,7 @@ class VectorSearchServiceImplTest {
 
     private static final String BASE_URL = "http://qdrant-test:6333";
     private static final String SEARCH_URL = BASE_URL + "/collections/movies/points/search";
+    private static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w200";
     private static final float[] VECTOR = new float[]{0.1f, 0.2f, 0.3f};
 
     private RestTemplate restTemplate;
@@ -36,7 +38,9 @@ class VectorSearchServiceImplTest {
         server = MockRestServiceServer.createServer(restTemplate);
         QdrantProperties props = new QdrantProperties();
         props.setBaseUrl(BASE_URL);
-        service = new VectorSearchServiceImpl(restTemplate, props);
+        TmdbProperties tmdb = new TmdbProperties();
+        tmdb.setPosterBaseUrl(POSTER_BASE_URL);
+        service = new VectorSearchServiceImpl(restTemplate, props, tmdb);
     }
 
     @Test
@@ -189,6 +193,124 @@ class VectorSearchServiceImplTest {
         VectorSearchResponse response = service.search(new VectorSearchRequest(VECTOR, 5));
 
         assertThat(response.getResults()).isEmpty();
+
+        server.verify();
+    }
+
+    @Test
+    void search_relativeThumbnailPath_isPrefixedWithPosterBaseUrl() {
+        server.expect(requestTo(SEARCH_URL))
+            .andRespond(withSuccess("""
+                {
+                  "result": [
+                    {
+                      "score": 0.9,
+                      "payload": {
+                        "title": "Galaxy Quest",
+                        "release_year": 1999,
+                        "genres": ["Science Fiction"],
+                        "summary_snippet": "By Grabthar's hammer.",
+                        "thumbnail_url": "/poster123.jpg"
+                      }
+                    }
+                  ]
+                }
+                """, MediaType.APPLICATION_JSON));
+
+        VectorSearchResponse response = service.search(new VectorSearchRequest(VECTOR, 1));
+
+        assertThat(response.getResults().get(0).getThumbnailUrl())
+            .isEqualTo(POSTER_BASE_URL + "/poster123.jpg");
+
+        server.verify();
+    }
+
+    @Test
+    void search_relativeThumbnailWithoutLeadingSlash_isStillJoinedCleanly() {
+        server.expect(requestTo(SEARCH_URL))
+            .andRespond(withSuccess("""
+                {
+                  "result": [
+                    {
+                      "score": 0.9,
+                      "payload": {
+                        "title": "Bare Path",
+                        "release_year": 2010,
+                        "genres": ["Drama"],
+                        "summary_snippet": "x",
+                        "thumbnail_url": "abc.jpg"
+                      }
+                    }
+                  ]
+                }
+                """, MediaType.APPLICATION_JSON));
+
+        VectorSearchResponse response = service.search(new VectorSearchRequest(VECTOR, 1));
+
+        assertThat(response.getResults().get(0).getThumbnailUrl())
+            .isEqualTo(POSTER_BASE_URL + "/abc.jpg");
+
+        server.verify();
+    }
+
+    @Test
+    void search_absoluteThumbnailUrl_isReturnedUnchanged() {
+        server.expect(requestTo(SEARCH_URL))
+            .andRespond(withSuccess("""
+                {
+                  "result": [
+                    {
+                      "score": 0.9,
+                      "payload": {
+                        "title": "Already Absolute",
+                        "release_year": 2020,
+                        "genres": ["Drama"],
+                        "summary_snippet": "x",
+                        "thumbnail_url": "https://other.example/img.jpg"
+                      }
+                    }
+                  ]
+                }
+                """, MediaType.APPLICATION_JSON));
+
+        VectorSearchResponse response = service.search(new VectorSearchRequest(VECTOR, 1));
+
+        assertThat(response.getResults().get(0).getThumbnailUrl())
+            .isEqualTo("https://other.example/img.jpg");
+
+        server.verify();
+    }
+
+    @Test
+    void search_posterBaseUrlWithTrailingSlash_isNormalized() {
+        QdrantProperties props = new QdrantProperties();
+        props.setBaseUrl(BASE_URL);
+        TmdbProperties tmdb = new TmdbProperties();
+        tmdb.setPosterBaseUrl(POSTER_BASE_URL + "/");
+        VectorSearchServiceImpl localService = new VectorSearchServiceImpl(restTemplate, props, tmdb);
+
+        server.expect(requestTo(SEARCH_URL))
+            .andRespond(withSuccess("""
+                {
+                  "result": [
+                    {
+                      "score": 0.9,
+                      "payload": {
+                        "title": "Trailing Slash",
+                        "release_year": 2010,
+                        "genres": ["Drama"],
+                        "summary_snippet": "x",
+                        "thumbnail_url": "/p.jpg"
+                      }
+                    }
+                  ]
+                }
+                """, MediaType.APPLICATION_JSON));
+
+        VectorSearchResponse response = localService.search(new VectorSearchRequest(VECTOR, 1));
+
+        assertThat(response.getResults().get(0).getThumbnailUrl())
+            .isEqualTo(POSTER_BASE_URL + "/p.jpg");
 
         server.verify();
     }
