@@ -60,7 +60,7 @@ public class QdrantServiceManagerImpl implements QdrantServiceManager {
     public ServiceStatus getStatus() {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(qdrantProperties.getBaseUrl() + "/health"))
+                    .uri(URI.create(qdrantProperties.getBaseUrl() + "/healthz"))
                     .GET()
                     .build();
             HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());

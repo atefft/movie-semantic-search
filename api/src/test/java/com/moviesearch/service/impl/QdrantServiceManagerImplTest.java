@@ -162,7 +162,7 @@ class QdrantServiceManagerImplTest {
         manager.getStatus();
 
         verify(httpClient).send(
-                org.mockito.ArgumentMatchers.argThat(req -> req.uri().toString().equals("http://localhost:6333/health")),
+                org.mockito.ArgumentMatchers.argThat(req -> req.uri().toString().equals("http://localhost:6333/healthz")),
                 any(HttpResponse.BodyHandler.class));
     }
 }
