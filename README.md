@@ -8,7 +8,7 @@ A portfolio project demonstrating AI-powered semantic search over the CMU Movie 
 
 Traditional keyword search fails when vocabulary doesn't match. Searching for "films about loneliness in space" won't find *Cast Away* because the plot summary never uses those words. Semantic search solves this by converting both the corpus and the query into dense vectors that capture *meaning*, not just tokens. This project implements that pipeline end-to-end, from raw text to a live search API.
 
-The target audience for this project is ML platform teams (e.g., Netflix ML Platform) that care about:
+The target audience for this project is ML platform teams that care about:
 - Serving ML models at scale with Triton Inference Server
 - Containerized infrastructure with Docker
 - Backend APIs in Java/Spring Boot
