@@ -57,6 +57,31 @@ def load_summaries(path) -> dict[str, str]:
     return result
 
 
+def chunk_summary(
+    text: str,
+    tokenizer,
+    window_size: int = 512,
+    overlap: int = 64,
+    max_chunks: int = 10,
+) -> list[str]:
+    if not text.strip():
+        return []
+    if overlap >= window_size:
+        raise ValueError(f"overlap ({overlap}) must be less than window_size ({window_size})")
+    if max_chunks < 1:
+        raise ValueError(f"max_chunks ({max_chunks}) must be at least 1")
+    token_ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+    step = window_size - overlap
+    chunks = []
+    i = 0
+    while i < len(token_ids) and len(chunks) < max_chunks:
+        if i > 0 and len(token_ids) <= i + overlap:
+            break
+        chunks.append(tokenizer.decode(token_ids[i : i + window_size]))
+        i += step
+    return chunks
+
+
 def join_data(metadata_map, summaries_map) -> list[dict]:
     records = []
     for movie_id, meta in metadata_map.items():

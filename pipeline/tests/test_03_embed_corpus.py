@@ -1,5 +1,7 @@
 """Tests for pipeline/03_embed_corpus.py."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
 
@@ -162,3 +164,91 @@ class TestJoinData:
         result = mod.join_data(metadata_map, summaries_map)
         rec = next(r for r in result if r["movie_id"] == "222")
         assert rec["summary_snippet"] == "In space, no one can hear you scream."
+
+
+# ---------------------------------------------------------------------------
+# chunk_summary
+# ---------------------------------------------------------------------------
+
+class TestChunkSummary:
+    def _make_tokenizer(self, token_ids):
+        tok = MagicMock()
+        tok.return_value = {"input_ids": token_ids}
+        tok.decode.return_value = "decoded"
+        return tok
+
+    def test_empty_string_returns_empty_without_calling_tokenizer(self, mod):
+        tok = self._make_tokenizer([1, 2, 3])
+        assert mod.chunk_summary("", tok) == []
+        tok.assert_not_called()
+
+    def test_whitespace_returns_empty_without_calling_tokenizer(self, mod):
+        tok = self._make_tokenizer([1, 2, 3])
+        assert mod.chunk_summary("   ", tok) == []
+        tok.assert_not_called()
+
+    def test_short_text_returns_single_chunk(self, mod):
+        tok = self._make_tokenizer([1, 2, 3])
+        tok.decode.return_value = "short summary"
+        result = mod.chunk_summary("short text", tok, window_size=512, overlap=64)
+        assert result == ["short summary"]
+
+    def test_text_exactly_filling_window_returns_single_chunk(self, mod):
+        tok = self._make_tokenizer(list(range(10)))
+        result = mod.chunk_summary("text", tok, window_size=10, overlap=2)
+        assert len(result) == 1
+
+    def test_happy_path_three_chunks(self, mod):
+        # 20 tokens, window=10, overlap=2, step=8 → 3 chunks
+        tok = self._make_tokenizer(list(range(1, 21)))
+        tok.decode.side_effect = ["first ten tokens", "overlapping middle", "final tail"]
+        result = mod.chunk_summary("long summary text", tok, window_size=10, overlap=2, max_chunks=10)
+        assert result == ["first ten tokens", "overlapping middle", "final tail"]
+        assert tok.decode.call_count == 3
+
+    def test_max_chunks_cap_enforced(self, mod):
+        # 50 tokens, window=10, overlap=2, step=8 → 6 chunks, capped at 3
+        tok = self._make_tokenizer(list(range(50)))
+        result = mod.chunk_summary("text", tok, window_size=10, overlap=2, max_chunks=3)
+        assert len(result) == 3
+
+    def test_15_chunks_with_max_10_returns_exactly_10(self, mod):
+        # 120 tokens, window=10, overlap=2, step=8 → 15 chunks, capped at 10
+        tok = self._make_tokenizer(list(range(120)))
+        result = mod.chunk_summary("text", tok, window_size=10, overlap=2, max_chunks=10)
+        assert len(result) == 10
+
+    def test_overlap_boundary_second_chunk_starts_at_step(self, mod):
+        # step = window_size - overlap = 10 - 2 = 8
+        tok = self._make_tokenizer(list(range(20)))
+        mod.chunk_summary("text", tok, window_size=10, overlap=2, max_chunks=10)
+        calls = tok.decode.call_args_list
+        assert list(calls[0][0][0]) == list(range(0, 10))
+        assert list(calls[1][0][0]) == list(range(8, 18))
+
+    def test_overlap_ge_window_raises_valueerror(self, mod):
+        tok = self._make_tokenizer([])
+        with pytest.raises(ValueError):
+            mod.chunk_summary("text", tok, window_size=10, overlap=10)
+
+    def test_overlap_gt_window_raises_valueerror(self, mod):
+        tok = self._make_tokenizer([])
+        with pytest.raises(ValueError):
+            mod.chunk_summary("text", tok, window_size=10, overlap=11)
+
+    def test_max_chunks_zero_raises_valueerror(self, mod):
+        tok = self._make_tokenizer([])
+        with pytest.raises(ValueError):
+            mod.chunk_summary("text", tok, max_chunks=0)
+
+    def test_max_chunks_negative_raises_valueerror(self, mod):
+        tok = self._make_tokenizer([])
+        with pytest.raises(ValueError):
+            mod.chunk_summary("text", tok, max_chunks=-1)
+
+    def test_returns_decoded_strings(self, mod):
+        tok = self._make_tokenizer([1, 2, 3])
+        tok.decode.return_value = "decoded string"
+        result = mod.chunk_summary("some text", tok)
+        assert result == ["decoded string"]
+        assert all(isinstance(s, str) for s in result)
