@@ -52,6 +52,7 @@ Steps:
 2. Export `all-MiniLM-L6-v2` from sentence-transformers to ONNX format
 3. Send each plot summary through Triton to get a 384-dimensional embedding vector
 4. Ingest all vectors + movie metadata into Qdrant
+5. Enrich Qdrant payloads with TMDB poster URLs
 
 ### Phase 2: Online Serving
 
@@ -68,10 +69,10 @@ At query time: the user's text is embedded by Triton, then Qdrant finds the near
 ## The Four Black Boxes
 
 ### Triton Inference Server
-NVIDIA's open-source model serving platform. Hosts the `all-MiniLM-L6-v2` model using the Python backend (which handles tokenization and encoding in a single inference call). Clients send raw text strings over gRPC and receive float32 embedding vectors back. Supports dynamic batching to efficiently handle bursts of requests.
+NVIDIA's open-source model serving platform. Hosts the `all-MiniLM-L6-v2` model using the ONNX Runtime backend, which runs the exported `model.onnx` directly. Clients tokenize text on their side and send three tensors (`input_ids`, `attention_mask`, `token_type_ids`); Triton returns per-token contextual embeddings, which the client mean-pools into a single 384-dim sentence vector. Supports dynamic batching to efficiently handle bursts of requests.
 
 **Why Triton instead of calling the model directly?**
-It decouples model serving from application logic. The Java API doesn't need to know anything about transformers or tokenization — it just calls a well-defined gRPC endpoint. This mirrors how ML platforms operate in production: models are deployed and versioned independently of the applications that use them.
+It decouples model serving from application logic. The Java API hosts the tokenizer and pooling math, but the heavy transformer inference lives behind a well-defined gRPC contract — the model can be retrained, re-exported, or swapped without redeploying the API. This mirrors how ML platforms operate in production: models are deployed and versioned independently of the applications that use them.
 
 ### Qdrant
 A vector database purpose-built for similarity search. Stores each movie as a vector (384 floats) plus a payload (title, year, genres, summary snippet). Given a query vector, returns the top-N closest movies by cosine similarity in milliseconds. Exposes REST and gRPC APIs and includes a web dashboard at port 6333.
@@ -128,14 +129,14 @@ If you used different models for indexing and querying, or re-exported the model
 
 For a production system serving millions of users, a managed vector DB (Pinecone, Weaviate Cloud, Qdrant Cloud) or a purpose-built ANN index (FAISS, ScaNN) would be considered based on latency SLAs and cost.
 
-### Triton Python Backend vs Raw ONNX
+### Triton ONNX Runtime Backend vs Python Backend
 
-Triton supports multiple backends. The raw ONNX backend accepts pre-tokenized tensors and returns raw logits — the application would need to handle tokenization and mean pooling. The Python backend accepts raw text and returns the final embedding. The Python backend is used here because:
-- It keeps the gRPC interface simple (text in, vector out)
-- Tokenization stays co-located with the model (correct behavior guaranteed)
-- The Java client remains model-agnostic
+Triton supports multiple backends. The Python backend accepts raw text and runs custom pre/post-processing (tokenize → encode → pool → normalize) inside a `model.py` wrapper. The ONNX Runtime backend runs `model.onnx` directly with no wrapper — clients are responsible for tokenization and pooling. The ONNX Runtime backend is used here because:
+- It keeps the model server thin — no custom Python code to maintain inside Triton
+- The Java API and Python pipeline both need a tokenizer anyway, so there's no extra burden
+- Native backends have lower per-request overhead than the Python backend
 
-Tradeoff: Python backend has slightly higher per-request overhead than native backends. Acceptable for this workload.
+Tradeoff: clients must keep their tokenizer in lock-step with the exported `tokenizer.json`. Both the Java API and the Python pipeline load the same tokenizer files from the model repository to guarantee parity.
 
 ### CPU vs GPU
 
@@ -149,14 +150,20 @@ TensorRT (GPU optimization) is excluded because no NVIDIA GPU is available in th
 movie-semantic-search/
 ├── README.md
 ├── Makefile                        # Convenience targets: up, down, pipeline, clean
-├── docker-compose.yml              # triton + qdrant + api services
+├── docker-compose.yml              # triton + qdrant + api + load-model + load-data services
 ├── .env.example                    # Environment variable template
 ├── .gitignore
 │
 ├── docs/
-│   ├── ARCHITECTURE.md             # Component diagram, data flow, Qdrant schema
+│   ├── ARCHITECTURE.md             # Top-level component diagram and data flow
 │   ├── API_CONTRACT.md             # REST endpoint specs, request/response shapes
-│   └── PIPELINE_SPEC.md            # Dataset details, pipeline steps, config options
+│   ├── PIPELINE_SPEC.md            # Dataset details, pipeline steps, config options
+│   └── arch/                       # Per-component detail pages (linked from ARCHITECTURE.md)
+│       ├── pipeline.md
+│       ├── triton.md
+│       ├── qdrant.md
+│       ├── api.md
+│       └── operator.md
 │
 ├── data/
 │   ├── raw/                        # gitignored: CMU corpus TSV/TXT files
@@ -164,35 +171,37 @@ movie-semantic-search/
 │
 ├── model-repository/
 │   └── all-minilm-l6-v2/
-│       ├── config.pbtxt            # Triton model config (complete)
+│       ├── config.pbtxt            # Triton model config (ONNX Runtime backend)
 │       └── 1/
-│           └── model.onnx          # gitignored: generated by pipeline step 02
+│           ├── model.onnx          # gitignored: generated by pipeline step 02
+│           ├── tokenizer.json      # generated by pipeline step 02; loaded by clients
+│           ├── tokenizer_config.json
+│           ├── vocab.txt
+│           └── special_tokens_map.json
 │
 ├── pipeline/
 │   ├── requirements.txt
+│   ├── Dockerfile
 │   ├── load-model.sh               # Entrypoint: export model to ONNX (Docker Compose service)
-│   ├── load-data.sh                # Entrypoint: embed corpus and ingest into Qdrant (Docker Compose service)
+│   ├── load-data.sh                # Entrypoint: download → embed → ingest → enrich (Docker Compose service)
 │   ├── 01_download_corpus.py       # Fetch and extract CMU dataset
-│   ├── 02_export_model.py          # Export all-MiniLM-L6-v2 to ONNX
+│   ├── 02_export_model.py          # Export all-MiniLM-L6-v2 to ONNX + tokenizer files
 │   ├── 03_embed_corpus.py          # Batch-embed all plot summaries via Triton
-│   ├── 04_ingest_qdrant.py         # Create collection and load vectors
-│   └── utils/
-│       └── __init__.py
+│   ├── 04_ingest_qdrant.py         # Create collection and load vectors + payloads
+│   ├── 05_enrich_tmdb.py           # Add TMDB poster URLs to existing Qdrant payloads
+│   └── tests/                      # pytest suite for the pipeline scripts
 │
 └── api/
     ├── pom.xml
     └── src/
         └── main/
-            ├── java/com/example/moviesearch/
+            ├── java/com/moviesearch/
             │   ├── MovieSearchApplication.java
-            │   ├── controller/SearchController.java
-            │   ├── service/SearchService.java
-            │   ├── service/EmbeddingService.java
-            │   ├── client/TritonClient.java
-            │   ├── client/QdrantSearchClient.java
-            │   └── model/
-            │       ├── SearchRequest.java
-            │       └── MovieResult.java
+            │   ├── config/         # @ConfigurationProperties + gRPC/REST client beans
+            │   ├── controller/     # SearchController, OperatorController
+            │   ├── exception/      # Service-specific exceptions + GlobalExceptionHandler
+            │   ├── model/          # Immutable Lombok @Value request/response DTOs
+            │   └── service/        # Interfaces + impl/ (real and mock implementations)
             └── resources/
                 ├── application.yml
                 └── static/index.html
@@ -255,7 +264,7 @@ Response shape (both search endpoints):
       "genres": ["Drama", "Adventure"],
       "score": 0.87,
       "summary_snippet": "A FedEx executive undergoes a physical and personal transformation...",
-      "thumbnail_url": "/uVlUu174iiKLBgcNnDOCFR8LNKP.jpg"
+      "thumbnail_url": "https://image.tmdb.org/t/p/w200/uVlUu174iiKLBgcNnDOCFR8LNKP.jpg"
     }
   ]
 }
@@ -269,11 +278,12 @@ Response shape (both search endpoints):
 User query
   → GET /api/search?q=...
   → SearchController (Spring Boot)
-  → EmbeddingService → TritonClient (gRPC :8001)
-      → Triton Python backend: tokenize + mean pool → float32[384]
-  → SearchService → QdrantSearchClient (REST :6333)
-      → cosine similarity search → top-10 results
-  → List<MovieResult> → JSON response → browser
+  → SearchService
+      → EmbeddingService: tokenize client-side, call Triton (gRPC :8001),
+        receive token_embeddings, mean-pool → float32[384]
+      → VectorSearchService: cosine similarity search against Qdrant (REST :6333)
+        → top-N results
+  → SearchResponse JSON → browser
 ```
 
 ---

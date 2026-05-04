@@ -63,11 +63,11 @@ value is also stored as a string in the `movie_id` payload field.
 | `release_year` | `integer \| null` | Parsed from `release_date` field; null if unparseable |
 | `genres` | `string[]` | Parsed from JSON map in metadata TSV (keys only) |
 | `summary_snippet` | `string` | First 300 characters of plot summary |
-| `thumbnail_url` | `string \| null` | TMDB poster path, e.g. `"/abc123.jpg"` — prepend base URL to display |
+| `thumbnail_url` | `string \| null` | TMDB poster path, e.g. `"/abc123.jpg"` — Qdrant stores the relative path; the Spring Boot API prepends the base URL before returning it on `/api/search`. |
 
-**TMDB poster base URL:** `https://image.tmdb.org/t/p/w200{poster_path}`
+**TMDB poster base URL (assembled by the API):** `https://image.tmdb.org/t/p/w200{poster_path}`
 
-Example full URL: `https://image.tmdb.org/t/p/w200/abc123.jpg`
+Example full URL returned by the API: `https://image.tmdb.org/t/p/w200/abc123.jpg`
 
 ## Search Request
 

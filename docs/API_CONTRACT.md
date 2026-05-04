@@ -28,7 +28,7 @@ Embed the query via Triton and return the top matching movies from Qdrant by cos
       "genres": ["Drama", "Adventure"],
       "score": 0.8741,
       "summary_snippet": "A FedEx executive undergoes a physical and personal transformation...",
-      "thumbnail_url": "/uVlUu174iiKLBgcNnDOCFR8LNKP.jpg"
+      "thumbnail_url": "https://image.tmdb.org/t/p/w200/uVlUu174iiKLBgcNnDOCFR8LNKP.jpg"
     }
   ]
 }
@@ -45,7 +45,7 @@ Embed the query via Triton and return the top matching movies from Qdrant by cos
 | `results[].genres` | string[] | e.g. `["Drama", "Thriller"]` |
 | `results[].score` | float | Cosine similarity, 0.0–1.0 |
 | `results[].summary_snippet` | string | First 300 chars of plot summary |
-| `results[].thumbnail_url` | string \| null | TMDB poster path; prepend `https://image.tmdb.org/t/p/w200` to display. Null if not enriched. |
+| `results[].thumbnail_url` | string \| null | Absolute TMDB poster URL (e.g. `https://image.tmdb.org/t/p/w200/abc123.jpg`). Null if not enriched. |
 
 ### Error Responses
 
@@ -94,7 +94,7 @@ Spring Boot Actuator health endpoint.
 
 ## Notes
 
-- `thumbnail_url` is a TMDB poster **path only** (e.g. `/abc123.jpg`). Clients must prepend the base URL: `https://image.tmdb.org/t/p/w200`
+- `thumbnail_url` is an **absolute** TMDB poster URL (e.g. `https://image.tmdb.org/t/p/w200/abc123.jpg`). The API assembles the full URL so clients don't need to know the TMDB CDN scheme.
 - `score` is cosine similarity in the range 0.0–1.0. Higher is more similar.
 - Results are returned in descending score order.
 - The autocomplete endpoint is intended for debounced UI calls (300ms debounce, min 2 chars). It is not rate-limited on the server side.
