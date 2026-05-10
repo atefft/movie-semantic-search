@@ -24,6 +24,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Drama", "Adventure"))
             .score(0.94f)
             .summarySnippet("A FedEx executive must transform himself physically and emotionally to survive a crash landing on a deserted island.")
+            .matchingSegment("He crash-lands on an uninhabited island and must survive alone.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -32,6 +33,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Adventure", "Drama"))
             .score(0.91f)
             .summarySnippet("An astronaut becomes stranded on Mars after his team assumes him dead, and must rely on his ingenuity to survive.")
+            .matchingSegment("Stranded on Mars, he grows food using Martian soil and his own ingenuity.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -40,6 +42,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Thriller"))
             .score(0.88f)
             .summarySnippet("Two astronauts work together to survive after an accident leaves them stranded in space.")
+            .matchingSegment("Debris destroys their shuttle, leaving them adrift in orbit.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -48,6 +51,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Adventure", "Drama"))
             .score(0.85f)
             .summarySnippet("A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.")
+            .matchingSegment("They journey through a wormhole near Saturn to find a habitable planet.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -56,6 +60,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Drama", "History", "Thriller"))
             .score(0.82f)
             .summarySnippet("NASA must devise a strategy to return Apollo 13 to Earth safely after the spacecraft undergoes massive internal damage.")
+            .matchingSegment("An oxygen tank explosion cripples the spacecraft en route to the Moon.")
             .thumbnailUrl(null)
             .build()
     );
