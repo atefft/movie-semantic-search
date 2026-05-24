@@ -13,5 +13,6 @@ public class MovieResult {
     List<String> genres;
     float score;
     String summarySnippet;
+    String matchingSegment;
     String thumbnailUrl;
 }

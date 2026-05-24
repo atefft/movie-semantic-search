@@ -24,6 +24,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Drama", "Adventure"))
             .score(0.94f)
             .summarySnippet("A FedEx executive must transform himself physically and emotionally to survive a crash landing on a deserted island.")
+            .matchingSegment("A FedEx executive crash-lands on a deserted island and must survive alone.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -32,6 +33,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Adventure", "Drama"))
             .score(0.91f)
             .summarySnippet("An astronaut becomes stranded on Mars after his team assumes him dead, and must rely on his ingenuity to survive.")
+            .matchingSegment("An astronaut stranded on Mars uses science to survive until rescue.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -40,6 +42,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Thriller"))
             .score(0.88f)
             .summarySnippet("Two astronauts work together to survive after an accident leaves them stranded in space.")
+            .matchingSegment("Two astronauts struggle to return to Earth after debris destroys their shuttle.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -48,6 +51,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Science Fiction", "Adventure", "Drama"))
             .score(0.85f)
             .summarySnippet("A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.")
+            .matchingSegment("Explorers travel through a wormhole seeking a new home for humanity.")
             .thumbnailUrl(null)
             .build(),
         MovieResult.builder()
@@ -56,6 +60,7 @@ public class MockVectorSearchService implements VectorSearchService {
             .genres(List.of("Drama", "History", "Thriller"))
             .score(0.82f)
             .summarySnippet("NASA must devise a strategy to return Apollo 13 to Earth safely after the spacecraft undergoes massive internal damage.")
+            .matchingSegment("NASA engineers race to bring home three astronauts after an oxygen tank explosion.")
             .thumbnailUrl(null)
             .build()
     );
