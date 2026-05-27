@@ -52,8 +52,8 @@ class VectorSearchServiceImplIntegrationTest {
         String qdrantResponse = """
                 {
                   "result": [
-                    {"id":1,"score":0.94,"payload":{"title":"Cast Away","release_year":2000,"genres":["Drama","Adventure"],"summary_snippet":"A FedEx executive must survive a crash landing.","thumbnail_url":"https://image.tmdb.org/t/p/w200/path.jpg"}},
-                    {"id":2,"score":0.91,"payload":{"title":"The Martian","release_year":2015,"genres":["Science Fiction"],"summary_snippet":"An astronaut stranded on Mars.","thumbnail_url":null}}
+                    {"id":1,"score":0.94,"payload":{"movie_id":"1","title":"Cast Away","release_year":2000,"genres":["Drama","Adventure"],"summary_snippet":"A FedEx executive must survive a crash landing.","thumbnail_url":"https://image.tmdb.org/t/p/w200/path.jpg"}},
+                    {"id":2,"score":0.91,"payload":{"movie_id":"2","title":"The Martian","release_year":2015,"genres":["Science Fiction"],"summary_snippet":"An astronaut stranded on Mars.","thumbnail_url":null}}
                   ]
                 }
                 """;

@@ -21,4 +21,9 @@ class QdrantPropertiesTest {
     void defaultMockIsFalse() {
         assertThat(qdrantProperties.isMock()).isFalse();
     }
+
+    @Test
+    void defaultOversamplingFactorIs20() {
+        assertThat(qdrantProperties.getOversamplingFactor()).isEqualTo(20);
+    }
 }
