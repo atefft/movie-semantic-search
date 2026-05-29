@@ -215,7 +215,7 @@ movie-semantic-search/
 
 ### To run the project
 - **Docker Desktop** 4.x+ (with Compose v2)
-- ~4 GB disk space for corpus + model + vectors
+- **~25 GB free disk space** — the Triton Inference Server image alone is ~23 GB; corpus + model + vectors add ~500 MB on top
 
 ### To develop or run tests locally
 - **Python 3.11+** with pip (pipeline tests)
