@@ -59,17 +59,27 @@ Health checks are performed server-side by `OperatorController` on each `/api/op
 | 4 | `04_ingest_qdrant.py` | Qdrant healthy + step 3 done |
 | 5 | `05_enrich_tmdb.py` | Qdrant healthy + step 4 done + TMDB key set |
 
-### "Already done" checks
+### Step "done" state vs. per-run skip checks
 
-All file paths are relative to `project.root` (configured in `application.yml`).
+These are two **separate** mechanisms — the doc previously conflated them:
 
-| # | Condition |
-|---|---|
-| 1 | `data/raw/movie.metadata.tsv` **and** `data/raw/plot_summaries.txt` both exist |
-| 2 | `model-repository/all-minilm-l6-v2/1/model.onnx` **and** `model-repository/all-minilm-l6-v2/1/tokenizer.json` both exist |
-| 3 | `data/embeddings/embeddings.npy` **and** `data/embeddings/metadata.json` both exist |
-| 4 | `GET {qdrant.base-url}/collections/movies` returns `points_count > 0` |
-| 5 | At least 1 Qdrant point has a non-null `thumbnail_url` field |
+1. **Dashboard `done` / status icons** are tracked **in memory** by `PipelineServiceImpl`
+   (`EnumMap<PipelineStep, Boolean> done`). A step is marked done only after it completes
+   successfully *in the current process*; the map is empty on restart and cleared by
+   `Reset & Run All` (`?force=true`). `prereqsMet` is likewise derived purely from the in-memory
+   `done` of the preceding step (plus a service-running check enforced at run time, not in status).
+   Status is **not** recomputed from the filesystem or Qdrant.
+
+2. **Per-run skip checks**: when a step actually executes with `force=false`, its service skips the
+   work if its output already exists. Paths are relative to `project.root`.
+
+| # | Skip when (`force=false`) | Where |
+|---|---|---|
+| 1 | *never skips* — always re-downloads + re-extracts (implemented in Java, not via `01_download_corpus.py`) | `DownloadDatasetServiceImpl` |
+| 2 | `model-repository/all-minilm-l6-v2/1/model.onnx` exists | `ExportModelServiceImpl` |
+| 3 | `data/embeddings/embeddings.npy` **and** `data/embeddings/metadata.json` both exist | `GenerateEmbeddingsServiceImpl` |
+| 4 | `GET {qdrant.base-url}/collections/movies` returns `points_count > 0` | `IngestIntoQdrantServiceImpl` |
+| 5 | At least 1 Qdrant point has a non-null `thumbnail_url` field | `EnrichWithTmdbServiceImpl` |
 
 ### Step status icons
 
@@ -107,11 +117,14 @@ Each step row has a collapsible log panel (`<details>`). When a step runs:
 
 ## TMDB API Key
 
-Step 5's row includes a text input for the TMDB API key:
+Step 5 needs a TMDB API key, supplied to the Python script via the `TMDB_API_KEY` environment
+variable.
 
-- Sent as `?tmdbKey=<value>` on the run request
-- Validated server-side (non-blank) before the Python script is spawned; returns 400 if blank
-- Never persisted — must be re-entered on page reload (no secrets stored in the app)
+- The key is read **server-side from config** (`tmdb.api-key`, which defaults to the `TMDB_API_KEY`
+  env var) by `EnrichWithTmdbServiceImpl`, then passed to `05_enrich_tmdb.py`'s environment
+- Step 5's row in `operator.html` still renders a text input and appends `?tmdbKey=<value>`, but
+  the controller currently **ignores** that query parameter — there is no `?tmdbKey=` binding and
+  no 400-on-blank validation. (Known UI/back-end gap.)
 
 ---
 
@@ -119,9 +132,9 @@ Step 5's row includes a text input for the TMDB API key:
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/operator/health` | `{"triton": bool, "qdrant": bool}` |
-| `GET` | `/api/operator/status` | Array of 5 step objects (see below) |
-| `GET` | `/api/operator/run/{step}` | SSE stream; runs step 1–5. Step 5 requires `?tmdbKey=`. Returns 409 if another step is running or prereqs not met. |
+| `GET` | `/api/operator/health` | `{"triton": bool, "qdrant": bool, "mock": bool}` |
+| `GET` | `/api/operator/status` | `PipelineStatusResponse` wrapping the 5 step objects (see below) |
+| `GET` | `/api/operator/run/{step}` | SSE stream; runs step 1–5. Returns 400 for an unknown step number, 409 if another step is running. The TMDB key for step 5 is read from config, **not** from this request. |
 | `GET` | `/api/operator/run/all` | SSE stream; runs all steps in order, skipping done ones. `?force=true` skips the "already done" check. |
 | `POST` | `/api/operator/service/{name}/start` | Starts `triton` or `qdrant` via `docker compose up -d {name}` |
 | `POST` | `/api/operator/service/{name}/stop` | Stops `triton` or `qdrant` via `docker compose stop {name}` |
@@ -131,12 +144,15 @@ Step 5's row includes a text input for the TMDB API key:
 ```json
 {
   "step": 3,
-  "name": "Embed Corpus",
   "done": false,
   "prereqsMet": true,
   "running": false
 }
 ```
+
+`step` serializes to the step number (1–5). There is no `name` field on the wire — the UI maps
+numbers to display names locally. The server-side enum names are: `Download Dataset`,
+`Export Model`, `Generate Embeddings`, `Ingest into Qdrant`, `Enrich with TMDB`.
 
 ### HTTP status codes
 
@@ -156,24 +172,35 @@ Step 5's row includes a text input for the TMDB API key:
 - Working directory set to `project.root`
 
 ### `PipelineService`
-- Spawns each Python script via `ProcessBuilder`; working directory = `project.root`
-- Merges environment variables per step (e.g. `TMDB_API_KEY` for step 5)
-- Holds a single `AtomicReference<Process>` to enforce one-at-a-time execution
+- Steps 2–5 are delegated to per-step services that spawn the Python script via `PythonScriptRunner`
+  (`ProcessBuilder`, working directory = `project.root`); step 1 (download/extract) is implemented
+  directly in Java
+- Merges environment variables per step (e.g. `TMDB_API_KEY` for step 5, read from config)
+- Holds a single `AtomicReference<PipelineStep> running` to enforce one-at-a-time execution; each run
+  executes on a virtual thread
 
 ### `OperatorController`
 - Uses Spring `SseEmitter` for `/run/*` endpoints
-- Reads stdout/stderr from the spawned process on a virtual thread, forwarding each line as an SSE `data:` event
-- Sends `event: done` with exit code on process exit
+- Forwards each captured stdout/stderr line as an SSE `data:` event
+- Sends `event: done` with `{"exitCode": n}` when the run finishes
 
 ### `application.yml` additions
 
 ```yaml
 project:
-  root: /path/to/project
+  root: .                    # base dir for docker compose + spawned python scripts
 
-triton:
-  health-url: http://localhost:8000/v2/health/ready
+dataset:
+  corpus-url: http://www.cs.cmu.edu/~ark/personas/data/MovieSummaries.tar.gz
+  data-dir: data/corpus
+
+model:
+  script-dir: ../pipeline
+  model-dir: ../model-repository
 
 qdrant:
-  base-url: http://localhost:6333
+  base-url: ${QDRANT_BASE_URL:http://localhost:6333}
 ```
+
+The Triton health check (`GET http://localhost:8000/v2/health/ready`) is **not** configurable —
+the port `8000` and path are hardcoded in `TritonServiceManagerImpl`. There is no `triton.health-url` key.

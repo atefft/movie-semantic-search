@@ -20,10 +20,12 @@ sequenceDiagram
 
   Note over FS,Triton: 03_embed_corpus.py
   FS->>FS: Join metadata.tsv + plot_summaries.txt on wikipedia_movie_id
+  FS->>FS: Tokenize summaries (HuggingFace, max_length=128)
   FS->>Triton: Warmup: 1 dummy request
   loop Batches of 64
-    FS->>Triton: gRPC InferRequest (batch of text strings)
-    Triton-->>FS: float32[batch, 384] embeddings
+    FS->>Triton: gRPC InferRequest (input_ids, attention_mask, token_type_ids)
+    Triton-->>FS: token_embeddings float32[batch, seq, 384]
+    FS->>FS: Mean-pool (attention-mask weighted) → float32[batch, 384]
   end
   FS->>FS: Save data/embeddings/embeddings.npy + metadata.json
 
@@ -72,8 +74,10 @@ ONNX tensor names produced by this export:
 | Input | `token_type_ids` | int64 | `[batch, seq]` |
 | Output | `token_embeddings` | float32 | `[batch, seq, 384]` |
 
-`model.py` mean-pools `token_embeddings` over the sequence dimension (weighted by
-`attention_mask`) to produce the final `[batch, 384]` sentence embedding.
+The exported ONNX model returns per-token `token_embeddings`. The **consumer** mean-pools these
+over the sequence dimension (weighted by `attention_mask`) to produce the final `[batch, 384]`
+sentence embedding — `03_embed_corpus.py` at index time and the Java API at query time. Triton
+runs `model.onnx` directly via its ONNX Runtime backend and does no pooling. See `docs/arch/triton.md`.
 
 ### `03_embed_corpus.py`
 
@@ -90,6 +94,7 @@ ONNX tensor names produced by this export:
 - Creates Qdrant collection `movies` with:
   - `vectors.size = 384`
   - `vectors.distance = Cosine`
+- Point ID is the embedding's sequential index (`0 … N-1`), not the Wikipedia movie ID
 - Upserts all points. Payload per point:
   ```
   movie_id:        string        (wikipedia_movie_id, cast to string)
@@ -99,7 +104,9 @@ ONNX tensor names produced by this export:
   summary_snippet: string        (first 300 chars of plot_summaries.txt)
   thumbnail_url:   string|null   (null at this stage; populated by script 05)
   ```
-- Idempotent: recreates collection cleanly on re-run
+- Re-runnable: unconditionally calls `recreate_collection`, which **drops and rebuilds** the
+  collection from scratch every run (a full wipe, not a skip-if-exists)
+- Upserts in batches of 256
 
 ### `05_enrich_tmdb.py`
 
@@ -111,14 +118,19 @@ ONNX tensor names produced by this export:
 - Idempotent: skips points that already have `thumbnail_url` set
 - If TMDB returns no match, `thumbnail_url` remains null
 
-## `requirements.txt` (pinned versions)
+## `requirements.txt`
 
 ```
-sentence-transformers==2.7.0
-tritonclient[grpc]==2.44.0
-qdrant-client==1.9.1
-requests==2.31.0
+transformers==4.39.3
+torch>=2.0.0
 numpy==1.26.4
-tqdm==4.66.4
-onnxruntime==1.17.3
+onnxruntime>=1.20
+onnxscript==0.7.0
+tritonclient[grpc]
+tqdm
+qdrant-client==1.18.0
+requests
 ```
+
+`torch` and `onnxscript` are export-time dependencies (`02_export_model.py`); `tritonclient[grpc]`,
+`tqdm`, and `requests` are intentionally unpinned.
