@@ -37,7 +37,7 @@ services:
     volumes:
       - ./model-repository/all-minilm-l6-v2/1:/app/tokenizer:ro
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8080}:8080"
     depends_on:
       triton:
         condition: service_healthy

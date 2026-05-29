@@ -219,7 +219,9 @@ movie-semantic-search/
 
 ---
 
-## Quick Start (for future reference)
+## Quick Start
+
+> **Port 8080 must be free** before starting. If something else is using it, set `API_PORT` to an available port (e.g. `API_PORT=8081`) when running the commands below and open that port in step 4 instead.
 
 ```bash
 # 1. Export the ONNX model (Phase 1 — run once before starting services)
@@ -227,6 +229,8 @@ docker compose run --rm load-model
 
 # 2. Start infrastructure (Triton + Qdrant + API)
 docker compose up -d
+# If port 8080 is taken:
+# API_PORT=8081 docker compose up -d
 
 # 3. Load the movie data (Phase 2 — run once after services are healthy)
 docker compose run --rm load-data
