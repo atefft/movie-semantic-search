@@ -9,7 +9,7 @@ import yaml
 _REPO_ROOT = Path(__file__).parent.parent.parent
 _CI_COMPOSE = _REPO_ROOT / "docker-compose.ci.yml"
 _COMPOSE = _REPO_ROOT / "docker-compose.yml"
-_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "docker-compose-check.yml"
+_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 
 class TestDockerComposeCiFile:

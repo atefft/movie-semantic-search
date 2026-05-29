@@ -5,6 +5,7 @@ triton:
   deadline-ms: 5000
   max-length: 128
   tokenizer-path: ${user.dir}/../model-repository/all-minilm-l6-v2/1/tokenizer.json
+  mock: true
 
 qdrant:
   base-url: ${QDRANT_BASE_URL:http://localhost:6333}
