@@ -37,6 +37,11 @@ def main():
     with open("data/embeddings/metadata.json") as f:
         metadata = json.load(f)
 
+    if len(embeddings) != len(metadata):
+        raise ValueError(
+            f"Embedding count ({len(embeddings)}) != metadata count ({len(metadata)})"
+        )
+
     client = QdrantClient(url=args.qdrant_url)
     setup_collection(client, "movies")
     points = build_points(embeddings, metadata)
