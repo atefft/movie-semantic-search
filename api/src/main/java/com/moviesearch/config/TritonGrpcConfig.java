@@ -19,6 +19,7 @@ public class TritonGrpcConfig {
     @Bean
     @ConditionalOnProperty(name = "triton.mock", havingValue = "false", matchIfMissing = true)
     public ManagedChannel tritonChannel(TritonProperties props) {
+        // Plaintext is intentional: Triton runs on the same Docker network with no external exposure
         channel = ManagedChannelBuilder.forAddress(props.getHost(), props.getPort())
                 .usePlaintext()
                 .build();

@@ -31,7 +31,9 @@ public class SearchController {
             @RequestParam String q,
             @RequestParam(defaultValue = "10") int limit) {
 
-        if (q == null || q.isBlank()) {
+        q = q.strip();
+
+        if (q.isBlank()) {
             return ResponseEntity.badRequest().body(
                 ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                     "Query parameter 'q' must not be blank"));
