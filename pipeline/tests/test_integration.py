@@ -248,11 +248,12 @@ class TestStep4IngestQdrant:
 # ---------------------------------------------------------------------------
 
 def _patch_qdrant_models():
-    qdrant_models = sys.modules.get("qdrant_client.models")
-    if qdrant_models is not None:
-        qdrant_models.Filter = MagicMock
-        qdrant_models.FieldCondition = MagicMock
-        qdrant_models.MatchValue = MagicMock
+    import qdrant_client.models as qdrant_models
+    qdrant_models.Filter = MagicMock
+    qdrant_models.FieldCondition = MagicMock
+    qdrant_models.MatchValue = MagicMock
+    qdrant_models.IsNullCondition = MagicMock
+    qdrant_models.PayloadField = MagicMock
 
 
 class TestStep5EnrichTmdb:
