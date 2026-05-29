@@ -50,9 +50,10 @@ vectors.size:      384
 vectors.distance:  Cosine
 ```
 
-**Point ID:** `wikipedia_movie_id` as unsigned integer (e.g., `975900`). Qdrant requires
-point IDs to be unsigned integers or UUIDs; the numeric CMU ID is used directly. The same
-value is also stored as a string in the `movie_id` payload field.
+**Point ID:** a sequential integer index (`0 … N-1`) assigned at ingest time, matching each
+embedding's position in `embeddings.npy` / `metadata.json` (see `04_ingest_qdrant.py`). It is
+**not** the Wikipedia movie ID. The Wikipedia movie ID is stored separately as a string in the
+`movie_id` payload field.
 
 ## Payload Schema
 
@@ -88,7 +89,7 @@ Example full URL returned by the API: `https://image.tmdb.org/t/p/w200/abc123.jp
 {
   "result": [
     {
-      "id": 975900,
+      "id": 4213,
       "score": 0.8741,
       "payload": {
         "movie_id": "975900",
@@ -105,8 +106,8 @@ Example full URL returned by the API: `https://image.tmdb.org/t/p/w200/abc123.jp
 
 ## Docker Configuration
 
-- **Image:** `qdrant/qdrant:v1.8.4`
+- **Image:** `qdrant/qdrant:v1.9.2`
 - **Ports:**
   - `:6333` — REST API + web dashboard (used by API and pipeline)
   - `:6334` — gRPC
-- **Volume mount:** `./qdrant_storage:/qdrant/storage`
+- **Volume mount:** named volume `qdrant_data:/qdrant/storage` (declared under `volumes:` in `docker-compose.yml`)
