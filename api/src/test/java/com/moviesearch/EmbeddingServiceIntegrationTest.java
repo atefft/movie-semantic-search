@@ -111,6 +111,7 @@ class EmbeddingServiceIntegrationTest {
 
     @Test
     void tritonProperties_defaultsMatchApplicationYml() {
+        assumeTokenizerAvailable();
         contextRunner.run(ctx -> {
             TritonProperties props = ctx.getBean(TritonProperties.class);
             assertThat(props.getHost()).isEqualTo("localhost");
