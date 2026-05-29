@@ -22,6 +22,8 @@ jobs:
           cache: maven
 
       - name: Run tests
+        env:
+          TRITON_MOCK: "true"
         run: ./mvnw -f api/pom.xml test
 
       - name: Upload test report
