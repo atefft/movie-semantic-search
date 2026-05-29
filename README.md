@@ -45,7 +45,7 @@ ONLINE (per request):
 
 ### Phase 1: Offline Pipeline
 
-A one-time Python pipeline that prepares the search index. It runs before the API is ever started and does not need to run again unless the corpus changes.
+A one-time Python pipeline that prepares the search index. Steps 1–2 run before services start; step 3 (embedding) requires Triton to be running, so it runs after `docker compose up`. The pipeline does not need to run again unless the corpus changes.
 
 Steps:
 1. Download and parse the CMU Movie Summary Corpus (metadata + plot summaries)
@@ -197,25 +197,29 @@ movie-semantic-search/
         └── main/
             ├── java/com/moviesearch/
             │   ├── MovieSearchApplication.java
-            │   ├── config/         # @ConfigurationProperties + gRPC/REST client beans
+            │   ├── config/         # @ConfigurationProperties, gRPC/REST client beans, CORS
             │   ├── controller/     # SearchController, OperatorController
             │   ├── exception/      # Service-specific exceptions + GlobalExceptionHandler
             │   ├── model/          # Immutable Lombok @Value request/response DTOs
             │   └── service/        # Interfaces + impl/ (real and mock implementations)
             └── resources/
                 ├── application.yml
-                └── static/index.html
+                └── static/
+                    ├── index.html      # Search UI
+                    └── operator.html   # Pipeline operator UI
 ```
 
 ---
 
 ## Prerequisites
 
+### To run the project
 - **Docker Desktop** 4.x+ (with Compose v2)
-- **Python 3.11+** with pip
-- **Java 21+** (e.g., Eclipse Temurin)
-- **Maven 3.9+**
 - ~4 GB disk space for corpus + model + vectors
+
+### To develop or run tests locally
+- **Python 3.11+** with pip (pipeline tests)
+- **Java 21+** (e.g., Eclipse Temurin) + **Maven 3.9+** (API tests)
 
 ---
 
@@ -242,7 +246,8 @@ open http://localhost:8080
 Or with Make:
 
 ```bash
-make up         # start all services
+make pipeline   # run full pipeline: export model, start services, load data
+make up         # start all services (skips pipeline)
 make down       # stop all services
 ```
 
